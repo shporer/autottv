@@ -132,8 +132,7 @@ autottv/
 │   ├── convergence.py                # R-hat / ESS / autocorrelation diagnostics
 │   ├── limb_darkening.py             # Claret 2017 LD interpolation
 │   ├── plotting.py                   # chains, corner, phase-fold, O–C, periodogram
-│   ├── utils.py                      # batman model, chi², BIC helpers
-│   └── webapp_export.py              # results.json → JSON export
+│   └── utils.py                      # batman model, chi², BIC helpers
 │
 ├── tests/                            # pytest suite
 ├── toi_catalog_240226.csv            # full TOI catalog

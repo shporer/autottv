@@ -40,7 +40,6 @@ from .plotting import (
     plot_oc_diagram, plot_oc_comparison, plot_periodogram,
     create_summary_figure
 )
-from .webapp_export import WebappExporter
 
 # Set up logging
 logging.basicConfig(
@@ -419,40 +418,7 @@ class AutoTTVPipeline:
             traceback.print_exc()
             return False
 
-    def export_results(self) -> bool:
-        """Export results to webapp format."""
-        logger.info("=" * 70)
-        logger.info("STEP 5: Exporting Results")
-        logger.info("=" * 70)
-
-        try:
-            exporter = WebappExporter()
-
-            planet_file = exporter.export_planet(
-                self.tic_id,
-                self.toi,
-                self.planet_params,
-                self.step1_results or {},
-                self.transit_results or [],
-                self.ephemeris_results or {},
-                self.periodogram_results or {},
-                self.data_loader.get_data_summary() if self.data_loader else {}
-            )
-
-            logger.info(f"Exported planet data to {planet_file}")
-
-            # Update catalog
-            catalog_file = exporter.flush_catalog()
-            logger.info(f"Updated catalog at {catalog_file}")
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Export failed: {e}")
-            traceback.print_exc()
-            return False
-
-    def run(self, download: bool = True, export: bool = True) -> Dict[str, Any]:
+    def run(self, download: bool = True) -> Dict[str, Any]:
         """
         Run complete analysis pipeline.
 
@@ -460,8 +426,6 @@ class AutoTTVPipeline:
         ----------
         download : bool
             Whether to download data if not cached
-        export : bool
-            Whether to export results to webapp
 
         Returns
         -------
@@ -514,11 +478,6 @@ class AutoTTVPipeline:
                 # Step 4: Periodogram
                 if self.run_step4_periodogram():
                     results['steps_completed'].append('step4_periodogram')
-
-            # Export results
-            if export:
-                if self.export_results():
-                    results['steps_completed'].append('export')
 
             results['success'] = len(results['steps_completed']) >= 3
 
@@ -614,8 +573,6 @@ def main():
     # Options
     parser.add_argument('--no-download', action='store_true',
                        help='Do not download data (use cache only)')
-    parser.add_argument('--no-export', action='store_true',
-                       help='Do not export results to webapp')
     parser.add_argument('--output-dir', type=str,
                        help='Output directory for results')
     parser.add_argument('--verbose', '-v', action='store_true',
@@ -631,8 +588,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     kwargs = {
-        'download': not args.no_download,
-        'export': not args.no_export
+        'download': not args.no_download
     }
 
     if args.batch:
