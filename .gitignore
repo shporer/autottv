@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+autottv_results_v2/
+*.npy
+.ipynb_checkpoints/
+.worktrees/
+
+# LaTeX build artifacts
+texput.log
+*.aux
+*.bbl
+*.blg
+*.out
+*.synctex.gz
+
+# Temp files
+~$*
+*.fits
+
+# Ad-hoc plots in repo root (results plots live in autottv_results_v2/)
+/*.png
+
+# Batch logs
+batch_logs/

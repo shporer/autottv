@@ -1,0 +1,78 @@
+# .dockerignore — keeps the build context small.
+#
+# Mirrors .gitignore for the obvious things, plus excludes large repo
+# artefacts (presentations, data dumps, batch logs) that aren't needed
+# inside the image.  Inputs that ARE needed (toi_catalog*.csv,
+# ttv_candidates*.csv, tables/, paper/, the pipeline modules, etc.)
+# are NOT excluded.
+
+# --- VCS ---
+.git
+.gitignore
+.gitattributes
+
+# --- Python ---
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.tox
+
+# --- venvs ---
+venv
+.venv
+env
+.env
+
+# --- editors / IDE ---
+.idea
+.vscode
+.DS_Store
+
+# --- huge result trees (will be bind-mounted at runtime) ---
+autottv_results_v2
+autottv_results_v3
+autottv_results_v3_old
+research_outputs
+
+# --- caches & worktrees ---
+.worktrees
+.ipynb_checkpoints
+.claude
+
+# --- raw data files & chains ---
+*.fits
+*.npy
+*.npz
+
+# --- large binary deliverables ---
+*.docx
+*.pptx
+*.key
+*.xlsx
+
+# --- root-level plots / logs (already gitignored too) ---
+*.png
+batch_*.log
+joint_*.log
+mem_watchdog*.log
+toi*_rerun*.log
+toi*_bls_rerun*.log
+gp_batch_progress.txt
+grazing_fixld_progress.txt
+
+# --- LaTeX build artefacts ---
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.out
+paper/*.synctex.gz
+texput.log
+
+# --- Docker itself ---
+Dockerfile
+.dockerignore

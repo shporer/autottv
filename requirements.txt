@@ -1,0 +1,16 @@
+# AutoTTV dependencies — source of truth for the pipeline.
+# No pinned versions; install the latest compatible with your Python.
+
+# Core
+lightkurve
+numpy
+scipy
+astropy
+pandas
+matplotlib
+
+# MCMC + transit model
+emcee
+batman-package
+corner  # optional — corner plots skipped if missing
+openpyxl  # optional — only for find_ttv_candidates.py xlsx export
