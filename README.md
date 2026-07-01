@@ -8,7 +8,7 @@ ephemerides and Lomb–Scargle TTV signals. A candidate-detection step flags TTV
 and a refined fitter re-stacks transits at their individually-fitted times to de-smear
 systems that a linear-ephemeris stack would bias.
 
-- **Catalog scope:** 3,776 TOIs (filtered for TTV analysis from the 7,890-line ExoFOP TOI catalog)
+- **Catalog scope:** 3,650 TOIs (filtered for TTV analysis from the 7,890-TOI ExoFOP TOI catalog)
 
 ---
 
@@ -136,7 +136,7 @@ autottv/
 │
 ├── tests/                            # pytest suite
 ├── toi_catalog_240226.csv            # full TOI catalog
-├── toi_catalog_240226_for_ttv.csv    # filtered catalog (3,776 TOIs)
+├── toi_catalog_240226_for_ttv.csv    # filtered catalog (3,650 TOIs)
 ├── requirements.txt
 └── Dockerfile
 ```
