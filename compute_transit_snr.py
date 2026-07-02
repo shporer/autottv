@@ -152,9 +152,9 @@ def compute_transit_snr(
 
 
 if __name__ == '__main__':
-    base = Path('/Users/avishporer/Desktop/Auto-TTV')
+    base = Path(__file__).resolve().parent
     df = compute_transit_snr(
-        catalog_path=str(base / 'toi_catalog_for_ttv.csv'),
+        catalog_path=str(base / 'toi_catalog_240226_for_ttv.csv'),
         spoc_cdpp_path=str(base / 'autottv_results_v2' / 'spoc_cdpp_sampled.npy'),
     )
 
