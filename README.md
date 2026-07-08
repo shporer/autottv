@@ -160,7 +160,7 @@ If you use this code, please cite:
 }
 ```
 
-A Nature Astronomy manuscript is in preparation.
+A refereed publication has been submitted.
 
 Please also cite the underlying mission and tooling:
 - Ricker et al. (2015) — TESS mission
