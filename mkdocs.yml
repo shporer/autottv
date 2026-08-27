@@ -1,0 +1,78 @@
+site_name: AutoTTV
+site_description: Automated MCMC transit-timing analysis of TESS planet candidates
+site_url: https://shporer.github.io/autottv/
+repo_url: https://github.com/shporer/autottv
+repo_name: shporer/autottv
+copyright: MIT licensed. TESS data courtesy of NASA/MAST.
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: installation.md
+      - Quick start: quickstart.md
+      - Running the pipeline: running.md
+  - Reference:
+      - What the code does: pipeline.md
+      - Output files: outputs.md
+      - Configuration: configuration.md
+  - Background:
+      - Physical background: physics.md
+      - Statistical methods: statistics.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+plugins:
+  - search
+
+# The repo's docs/ directory also holds internal planning material that is not part
+# of the manual. Excluding it keeps `mkdocs build --strict` (used by the Pages
+# workflow) from aborting on stray files and their unresolved relative links.
+exclude_docs: |
+  M4_injection_recovery_plan.md
+  notes/
+  plans/
+  _github_workflows_docs.yml

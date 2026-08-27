@@ -1,0 +1,14 @@
+/* Numeric literals in code blocks render in the surrounding text colour.
+   Pygments' bash lexer highlights the leading integer of a TOI identifier
+   (e.g. the "105" of "105.01") as a number and leaves the rest plain, which
+   splits the identifier visually. Comments, strings and keywords keep their
+   normal highlighting. */
+.highlight .m,   /* Literal.Number         */
+.highlight .mb,  /* Literal.Number.Bin     */
+.highlight .mf,  /* Literal.Number.Float   */
+.highlight .mh,  /* Literal.Number.Hex     */
+.highlight .mi,  /* Literal.Number.Integer */
+.highlight .mo,  /* Literal.Number.Oct     */
+.highlight .il { /* Literal.Number.Integer.Long */
+  color: inherit;
+}

@@ -1,5 +1,8 @@
-# AutoTTV dependencies — source of truth for the pipeline.
+# AutoTTV dependencies.
 # No pinned versions; install the latest compatible with your Python.
+#
+# The optional NumPyro/jaxoplanet development pipeline has its own extras file,
+# requirements-v3.txt; it is not needed to run the analysis.
 
 # Core
 lightkurve
@@ -9,8 +12,17 @@ astropy
 pandas
 matplotlib
 
-# MCMC + transit model
+# Sampler and transit model
 emcee
 batman-package
-corner  # optional — corner plots skipped if missing
-openpyxl  # optional — only for find_ttv_candidates.py xlsx export
+
+# Corner plots (imported unguarded in phase_fold_fitter.py)
+corner
+
+# TIC stellar-mass lookup, used to initialise a/Rs
+astroquery
+
+# Optional: only needed for the .xlsx code paths in find_ttv_candidates.py,
+# make_cp_kp_table.py and make_comparison_table.py. Imported lazily inside the
+# functions that use it, so it is safe to omit.
+# openpyxl

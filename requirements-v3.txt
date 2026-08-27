@@ -1,0 +1,17 @@
+# Additional dependencies for the v3 development pipeline
+# (NumPyro NUTS sampler + jaxoplanet transit model).
+#
+# Nothing in the v2 production pipeline imports these — they are used only by
+# run_full_analysis_v3.py and autottv_pipeline_v3/.
+#
+# Install with:
+#     pip install -r requirements-v3.txt
+#
+# which pulls in the v2 requirements as well.
+
+-r requirements.txt
+
+jax
+jaxlib
+numpyro
+jaxoplanet
