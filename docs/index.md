@@ -4,23 +4,31 @@
 
 AutoTTV takes a TESS Object of Interest, downloads every light curve MAST holds for it,
 fits the transit shape and each individual mid-transit time by MCMC, and searches the
-timing residuals for transit timing variations. It is designed to run unattended on a 
-single TOI or a group of TOIs producing homogeneous results.
+timing residuals for transit timing variations. It is designed to run unattended over the
+whole TOI catalog, producing homogeneous results rather than one-off bespoke fits.
 
 The pipeline was built for [Shporer & Drori (2026)](#citation), which applied it to
 **3,650 TOIs** across TESS Sectors 1–96 and produced **111,995 individual transit times**
-and identified **168 TTV candidates**.
+and **168 TTV candidates**.
+
+**Source code:** [github.com/shporer/autottv](https://github.com/shporer/autottv) — MIT licensed.
 
 ---
 
 ## What it produces
 
-For each TOI, one output directory contains (1) a `results.json` file that includes detailed 
-documentation of the analysis including the fitted parameters, (2) a set of diagnostic figures, 
-and (3) the MCMC chains in .npy files. 
+For each TOI, one directory containing a `results.json`, the MCMC chains, and a set of
+diagnostic figures. Across a catalog run, four summary tables: transit times, fitted
+transit parameters, and the TTV candidate lists split by detection class.
+
+| Product | Where |
+|---|---|
+| Per-TOI fit, chains, figures | `autottv_results_v2/TOI_<X>/` |
+| Transit-time catalog | `tables/transit_times.csv` |
+| Fitted transit parameters | `tables/fit_params_*.csv` |
+| TTV candidate lists | `ttv_candidates_canonical_strict_full.csv` |
 
 ## The shape of the analysis
-
 
 ```
 TOI number
@@ -34,8 +42,8 @@ TOI number
     ├─ Step 3   Ephemeris fits   →  linear vs quadratic, O−C residuals
     │
     └─ Step 4   Periodogram      →  Lomb–Scargle of O−C, bootstrap FAP
-    │
-    └─ TTV candidate?  →  iterative TTV-aware refit
+                                        │
+                                        └─ TTV candidate?  →  iterative TTV-aware refit
 ```
 
 Steps 1–4 run for every TOI. The iterative refit runs only for TTV candidates, and it is
@@ -43,20 +51,17 @@ what removes the radius-ratio bias described in [Physical background](physics.md
 
 ## Where to start
 
-<!-- <div class="grid cards" markdown> -->
+<div class="grid cards" markdown>
 
 - **New here?** → [Installation](installation.md), then [Quick start](quickstart.md) for a
   single TOI end to end.
-  
-- **Running a group?** → [Running the pipeline](running.md) for batch mode, resource
+- **Running a catalog?** → [Running the pipeline](running.md) for batch mode, resource
   planning, and the secondary fitters.
-  
 - **Interpreting results?** → [Output files](outputs.md) for every column of every table.
-
 - **Why does it work this way?** → [Physical background](physics.md) and
   [Statistical methods](statistics.md).
 
-<!-- </div> -->
+</div>
 
 ## Requirements at a glance
 
@@ -79,7 +84,3 @@ full-frame-image light curves.
 ## License
 
 MIT. See `LICENSE` in the repository.
-
-## Contact
-
-Have a questions, or want to report a problem/bug in the pipeline or this documentation? Email [shporer@mit.edu](mailto: shporer@mit.edu).
