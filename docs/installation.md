@@ -68,8 +68,9 @@ Run a single well-behaved TOI end to end:
 python run_full_analysis.py 105.01 --cpus=4
 ```
 
-If it completes, you will find `autottv_results_v2/TOI_105_01/results.json` alongside a
-set of PNGs. A first run also populates the light-curve cache, so it is slower than
+If it completes, you will find the `autottv_results_v2/TOI_105_01/` folder, with a 
+`results.json` file, alongside a set of PNG figures and MCMC chains in npy files. 
+A first run also populates the light-curve cache, so it is slower than
 subsequent ones. See [Quick start](quickstart.md) for what to look at in the output.
 
 ## Common installation problems
