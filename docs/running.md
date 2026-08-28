@@ -35,7 +35,7 @@ you asked for.
 
 ### When you need the overrides
 
-`--period` and `--t0` matter when the ExoFOP ephemeris is wrong or stale. A period error
+`--period` and `--t0` matter when the known ephemeris is wrong or stale. A period error
 propagates into a linear drift in the O−C diagram that can masquerade as a quadratic
 ephemeris, so if a target shows a strong ΔBIC with a clean parabola, re-deriving the
 period with `run_bls_highres.py` and re-running with the override is worth doing before
@@ -49,10 +49,11 @@ planet in the same system contaminates the out-of-transit baseline.
 
 ## Batch processing
 
-The catalog driver runs a range of lines from the filtered catalog:
+For analyzing a group of TOIs the driver runs a range of lines from the catalog 
+file included in this repo (toi_catalog_240226_for_ttv.csv; that file can be replaced):
 
 ```bash
-./run_batch_lines.sh 2 100      # lines 2-100 of toi_catalog_240226_for_ttv.csv
+./run_batch_lines.sh 2 100      # lines 2-100 
 ./run_batch_lines.sh 5 5        # just line 5
 ```
 
