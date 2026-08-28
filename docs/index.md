@@ -4,8 +4,8 @@
 
 AutoTTV takes a TESS Object of Interest, downloads every light curve MAST holds for it,
 fits the transit shape and each individual mid-transit time by MCMC, and searches the
-timing residuals for transit timing variations. It is designed to run unattended over the
-whole TOI catalog, producing homogeneous results rather than one-off bespoke fits.
+timing residuals for transit timing variations. It is designed to run unattended on a 
+group of TOIs, or the entire TOI catalog, producing homogeneous results.
 
 The pipeline was built for [Shporer & Drori (2026)](#citation), which applied it to
 **3,650 TOIs** across TESS Sectors 1–96 and produced **111,995 individual transit times**
