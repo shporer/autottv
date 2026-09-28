@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use AutoTTV, please cite it with the metadata below, together with the paper that describes it (Shporer & Drori, submitted to ApJS)."
+title: "AutoTTV: automated transit-timing pipeline for TESS"
+type: software
+authors:
+  - family-names: Shporer
+    given-names: Avi
+    orcid: "https://orcid.org/0000-0002-1836-3120"
+    affiliation: "Massachusetts Institute of Technology"
+  - family-names: Drori
+    given-names: Iddo
+    orcid: "https://orcid.org/0000-0001-9797-3885"
+    affiliation: "Yeshiva University"
+repository-code: "https://github.com/shporer/autottv"
+license: MIT
+keywords:
+  - exoplanets
+  - transit timing variations
+  - TESS
