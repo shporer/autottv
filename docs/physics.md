@@ -69,10 +69,11 @@ systematically inflating or deflating radii.
 ### Why sample in $b^2$? {#why-b2}
 
 The transit observables depend on $b^2$ nearly linearly, so a posterior that is awkward in
-$b$ is well behaved in $b^2$. And a uniform prior on $b^2$ is the *geometric* prior: for
-randomly oriented orbits the probability of an impact parameter below $b$ scales as $b$,
-so uniform in $b^2$ gives $p(b) \propto b$, which is correct. Sampling uniformly in $b$
-would over-weight central transits.
+$b$ is well behaved in $b^2$. A uniform prior on $b^2$ is not the geometric prior, though.
+For randomly oriented orbits $\cos i$ is uniform, so the probability of an impact parameter
+below $b$ scales as $b$: the isotropic prior is uniform in $b$. Uniform in $b^2$ instead
+gives $p(b) \propto b$, which puts more prior weight on high impact parameters, and so on
+the grazing solutions described below.
 
 The upper bound is $b^2 \leq (1+k)^2$, i.e. $b \leq 1+k$ — the geometric limit at which the
 planet's disc still grazes the star's.

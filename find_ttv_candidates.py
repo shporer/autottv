@@ -4,10 +4,13 @@ Search for TTV candidates among all analyzed TOIs using three detection criteria
 
   C1: Delta BIC (linear - quadratic) > TTV_DELTA_BIC_THRESHOLD (quadratic preferred)
   C2: Periodogram bootstrap FAP < TTV_FAP_THRESHOLD
-  C3: O-C RMS / mean error > TTV_OC_RMS_OVER_ERR_THRESHOLD
+  C3: weighted O-C RMS / median error > TTV_OC_RMS_OVER_ERR_THRESHOLD
+
+A TOI is a candidate if it meets at least one criterion and passes the
+leave-one-out test (C4, leave_one_out_test).
 
 Outputs:
-  - ttv_candidates.csv: TOIs meeting ALL three criteria
+  - ttv_candidates.csv: the candidates
   - ttv_candidates_summary.txt: summary statistics
 """
 
@@ -184,11 +187,13 @@ def find_ttv_candidates(
     results_dir : str
         Directory containing TOI_*/results.json files.
     delta_bic_threshold : float
-        Minimum delta BIC (linear - quadratic). Default: 0.0.
+        Minimum delta BIC (linear - quadratic).
+        Default: config.TTV_DELTA_BIC_THRESHOLD (6.0).
     fap_threshold : float
         Maximum bootstrap FAP. Default: 0.01.
     oc_rms_over_err_threshold : float
-        Minimum O-C RMS / mean error ratio. Default: 3.0.
+        Minimum weighted O-C RMS / median error ratio.
+        Default: config.TTV_OC_RMS_OVER_ERR_THRESHOLD (2.0).
     require_converged : bool
         If True, only include converged TOIs. Default: False.
     output_csv : str

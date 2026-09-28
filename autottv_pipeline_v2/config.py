@@ -272,8 +272,8 @@ TTV_DELTA_BIC_THRESHOLD = 6.0  # Strong evidence for quadratic ephemeris
 # Criterion 2: Periodogram FAP threshold for significant periodicity
 TTV_FAP_THRESHOLD = 0.01  # 1% false alarm probability
 
-# Criterion 3: O-C scatter significance (RMS / mean_error > threshold)
-TTV_OC_RMS_OVER_ERR_THRESHOLD = 2.0  # O-C RMS must exceed 2× mean timing error (relaxed from 3.0 on 2026-06-12 to match the C3>=2 LOO admission rule used for the canonical candidate list)
+# Criterion 3: O-C scatter significance (weighted RMS / median error > threshold)
+TTV_OC_RMS_OVER_ERR_THRESHOLD = 2.0  # weighted O-C RMS must exceed 2× the median timing error (relaxed from 3.0 on 2026-06-12 to match the C3>=2 LOO admission rule used for the canonical candidate list)
 
 # Phase range for phase-folded model plotting
 PHASE_PLOT_RANGE = 0.15  # -0.15 to +0.15 phase units

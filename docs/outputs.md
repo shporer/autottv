@@ -71,7 +71,9 @@ individual_transits
   transit_times[]       epoch, t_expected, t0_fit, t0_err, oc,
                         baseline_fit, slope_fit, n_points, mcmc_diagnostics
   oc_values[]           epoch, oc_minutes, oc_err_minutes
-  oc_rms_over_mean_err  ← Scatter criterion
+  oc_rms_minutes        weighted rms of the O−C about the weighted mean
+  oc_median_err_minutes ← Scatter criterion: oc_rms_minutes / oc_median_err_minutes
+  oc_rms_over_mean_err  legacy ratio over the mean error, not the criterion
 
 ephemeris
   linear                T0, P and errors
@@ -85,9 +87,10 @@ periodogram
 ```
 
 !!! tip "The three numbers that matter"
-    `ephemeris.delta_bic`, `periodogram.bootstrap_fap`, and
-    `individual_transits.oc_rms_over_mean_err` are the
+    `ephemeris.delta_bic`, `periodogram.bootstrap_fap`, and the ratio
+    `individual_transits.oc_rms_minutes / oc_median_err_minutes` are the
     [three detection criteria](statistics.md#the-three-detection-criteria).
+    `find_ttv_candidates.py` recomputes the last one from `oc_values`.
 
 ### Reading the chains
 

@@ -51,7 +51,9 @@ and a list of full transit epochs.
 
 ## Step 1 — Phase-folded transit fit
 
-**Module:** `phase_fold_fitter.py`
+**Module:** `FullAnalysisFitter` in `run_full_analysis.py`. The package's `phase_fold_fitter.py`
+is a separate implementation that samples $b$ with a flat prior; only
+`autottv_pipeline_v2/main.py` uses it.
 
 Every full transit is stacked on a strict linear ephemeris and one transit model is fitted
 to the composite by MCMC.
@@ -63,8 +65,10 @@ Eight, or six with `--fix-ld`:
 $$P, \quad T_0, \quad k = R_p/R_\star, \quad a/R_\star, \quad b^2, \quad \text{baseline}, \quad u_1, \quad u_2$$
 
 Sampling in $b^2$ rather than $b$ is deliberate: the transit observables depend on $b^2$
-near-linearly, which makes the posterior better behaved, and a uniform prior on $b^2$ is
-the geometric prior on $b$ — see [Physical background](physics.md#why-b2).
+near-linearly, which makes the posterior better behaved. The cost is in the prior: uniform
+in $b^2$ means $p(b) \propto b$, which gives high impact parameters more weight than
+isotropic orbits do (they give a uniform prior on $b$) — see
+[Physical background](physics.md#why-b2).
 
 ### Priors
 
@@ -152,7 +156,9 @@ the linear fit.
 
 ## Step 4 — Timing-residual periodogram
 
-**Module:** `periodogram.py`
+**Module:** `plot_periodogram` in `run_full_analysis.py`. The package's `periodogram.py`,
+used only by `autottv_pipeline_v2/main.py`, differs: its upper frequency comes from the
+median spacing of the measured transits.
 
 An error-weighted Lomb–Scargle periodogram of the O−C residuals, on a linear grid of 1,000
 frequencies running from $2/T_{\rm baseline}$ to $0.5/P$.

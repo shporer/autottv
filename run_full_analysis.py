@@ -144,8 +144,9 @@ def _mcmc_log_probability(theta):
     """Module-level log probability function for multiprocessing.
 
     Includes bounds checking for use as standalone function.
-    Note: parameter index 4 is b_sq (= b^2), giving a geometric prior
-    uniform in b^2 (equivalent to uniform in cos(i)).
+    Note: parameter index 4 is b_sq (= b^2), sampled uniformly in b^2, which
+    gives p(b) proportional to b. Isotropic orbits (uniform in cos(i)) would
+    give a uniform prior in b.
     """
     if _MCMC_FIX_LD:
         period, t0, rp_rs, a_rs, b_sq, baseline = theta

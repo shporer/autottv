@@ -8,7 +8,7 @@ ephemerides and Lomb–Scargle TTV signals. A candidate-detection step flags TTV
 and a refined fitter re-stacks transits at their individually-fitted times to de-smear
 systems that a linear-ephemeris stack would bias.
 
-- **Catalog scope:** 3,650 TOIs (filtered for TTV analysis from the 7,890-TOI ExoFOP TOI catalog)
+- **Catalog scope:** 3,775 TOIs in the filtered catalog (from the 7,890-TOI ExoFOP TOI catalog), of which 3,650 remain after the 125 removals listed in `rejected_TOIs_list.csv`
 
 ---
 
@@ -59,17 +59,20 @@ For every TOI, `run_full_analysis.py` executes:
 
 | Step | What | Module |
 |------|------|--------|
-| **1. Phase-fold MCMC** | Fit the global transit shape (P, T₀, Rp/Rs, a/Rs, b, u1, u2, baseline) by stacking all transits on a linear ephemeris. | `phase_fold_fitter.py` |
+| **1. Phase-fold MCMC** | Fit the global transit shape (P, T₀, Rp/Rs, a/Rs, b, u1, u2, baseline) by stacking all transits on a linear ephemeris. | `FullAnalysisFitter` in `run_full_analysis.py` |
 | **2. Individual-transit MCMC** | Fix the shape from Step 1; fit each transit's T_mid, baseline, slope. | `individual_transit_fitter.py` |
 | **3. Ephemeris analysis** | Compare linear vs quadratic ephemerides (ΔBIC ≥ 6 favours quadratic), compute O–C residuals. | `ephemeris_analysis.py` |
-| **4. TTV periodogram** | Lomb–Scargle of O–C with bootstrap FAP (requires ≥ 5 transits). | `periodogram.py` |
+| **4. TTV periodogram** | Lomb–Scargle of O–C with bootstrap FAP (requires ≥ 5 transits). | `plot_periodogram` in `run_full_analysis.py` |
+
+The package's `phase_fold_fitter.py` and `periodogram.py` are separate implementations, with a
+flat prior on b and a different frequency grid. Only `autottv_pipeline_v2/main.py` uses them.
 
 ### Priors (Step 1, free LD)
 
 - Period: σ = 2 × catalog error
 - T₀: σ = 2 × catalog error
 - Rp/Rs, a/Rs: 50 % Gaussian width around catalog-derived value (sampled uniformly within hard bounds)
-- b² ∈ [0, (1 + Rp/Rs)²] — uniform in b² ⇒ geometric prior on b
+- b² ∈ [0, (1 + Rp/Rs)²], uniform in b², so p(b) ∝ b: more weight at high b than isotropic orbits, which give a uniform prior on b
 - u1: σ = 0.15, centered on theoretical Claret value
 - u2: σ = 0.10, centered on theoretical Claret value
 
@@ -92,6 +95,7 @@ These re-use the per-TOI `autottv_results_v2/TOI_<X>/results.json` produced by t
 | Script | Purpose |
 |--------|---------|
 | `find_ttv_candidates.py` | Apply the detection criteria — quadratic ΔBIC (C1), periodogram FAP (C2), O–C-RMS / median-error ratio (C3) — to flag TTV candidates. |
+| `fit_joint_sinusoidal_ttv.py` | Fit a linear ephemeris plus a sinusoid to the transit times of the TOIs listed in `c2_loo_survivors.csv` (emcee). |
 | `refined_transit_params_for_ttv.py` | Re-stack transits at their individually-fitted T_mids and re-fit the shape (de-smears TTV systems that the linear-ephemeris stack biases). |
 
 ---
@@ -120,14 +124,16 @@ autottv/
 ├── refined_transit_params_for_ttv.py # refined shift-and-stack re-fit
 ├── filter_toi_catalog.py             # catalog filtering / transit counting
 ├── compute_transit_snr.py            # per-transit SNR (used by filter_toi_catalog)
+├── fit_joint_sinusoidal_ttv.py       # joint sinusoidal fit of the transit times
 │
 ├── autottv_pipeline_v2/              # the pipeline package (emcee + batman)
 │   ├── config.py                     # all configuration constants
 │   ├── data_loader.py                # TESS download + cache (lightkurve/MAST)
-│   ├── phase_fold_fitter.py          # Step 1
+│   ├── main.py                       # modular entry point, not used for the paper
+│   ├── phase_fold_fitter.py          # Step 1 in main.py only (flat b prior)
 │   ├── individual_transit_fitter.py  # Step 2
 │   ├── ephemeris_analysis.py         # Step 3
-│   ├── periodogram.py                # Step 4
+│   ├── periodogram.py                # Step 4 in main.py only
 │   ├── joint_transit_fitter.py       # joint shape + T_mid fitter
 │   ├── convergence.py                # R-hat / ESS / autocorrelation diagnostics
 │   ├── limb_darkening.py             # Claret 2017 LD interpolation
@@ -136,12 +142,15 @@ autottv/
 │
 ├── tests/                            # pytest suite
 ├── toi_catalog_240226.csv            # full TOI catalog
-├── toi_catalog_240226_for_ttv.csv    # filtered catalog (3,650 TOIs)
+├── toi_catalog_240226_for_ttv.csv    # filtered catalog (3,775 TOIs)
+├── rejected_TOIs_list.csv            # the 125 TOIs removed before the candidate search
+├── c2_loo_survivors.csv              # input list for fit_joint_sinusoidal_ttv.py
 ├── requirements.txt
 └── Dockerfile
 ```
 
-Heavy outputs (`autottv_results_v2/`, root `*.png`, batch logs) are git-ignored.
+Heavy outputs (`autottv_results_v2/`, root `*.png`, batch logs) are git-ignored, except
+`autottv_results_v2/spoc_cdpp_sampled.npy`, the SPOC CDPP sample that `compute_transit_snr.py` reads.
 
 ---
 

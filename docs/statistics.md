@@ -170,7 +170,7 @@ distinguished from a very small probability.
 |---|---|---|---|
 | **Periodic** | bootstrap FAP | $< 0.01$ | `TTV_FAP_THRESHOLD` |
 | **Quadratic** | $\Delta$BIC | $> 6$ | `TTV_DELTA_BIC_THRESHOLD` |
-| **Scatter** | O−C rms / median error | $> 2$ | `TTV_OC_RMS_OVER_ERR_THRESHOLD` |
+| **Scatter** | weighted O−C rms / median error | $> 2$ | `TTV_OC_RMS_OVER_ERR_THRESHOLD` |
 
 A TOI tripping any criterion becomes a candidate, subject to validation. Classification is
 by precedence: Periodic wins where it fires, then Quadratic, then Scatter. Many candidates
