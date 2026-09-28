@@ -173,8 +173,8 @@ distinguished from a very small probability.
 | **Scatter** | weighted O−C rms / median error | $> 2$ | `TTV_OC_RMS_OVER_ERR_THRESHOLD` |
 
 A TOI tripping any criterion becomes a candidate, subject to validation. Classification is
-by precedence: Periodic wins where it fires, then Quadratic, then Scatter. Many candidates
-trip more than one.
+by precedence among the criteria that survive validation: Periodic, then Quadratic, then
+Scatter. Many candidates trip more than one.
 
 !!! note
     The `C1`/`C2` column labels in `ttv_candidates_canonical_strict_full.csv` are inverted
@@ -187,10 +187,11 @@ trip more than one.
 
 A criterion firing is not sufficient. Each flagged TOI is re-tested with each transit
 dropped in turn: if removing any **single** transit destroys the detection, the signal was
-driven by one event and is rejected.
+driven by one event and is rejected. Each criterion is tested on its own: it survives only
+if it still passes after every drop, and the TOI is kept if at least one criterion survives.
 
-For the Periodic criterion, each drop gets a full bootstrap FAP recomputation, and the
-candidate survives only if every drop still yields FAP $< 0.01$.
+For the Periodic criterion, each drop gets a full permutation FAP recomputation (10,000
+permutations), and the criterion survives only if every drop still yields FAP $< 0.01$.
 
 This works asymmetrically across the three criteria, and it is worth understanding why:
 

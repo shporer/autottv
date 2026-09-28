@@ -22,8 +22,10 @@ autottv_results_v2/TOI_125_01/
 ├── corner_plot.png
 ├── full_phase_curve.png
 │
-├── refined_strict_iter1/           # TTV candidates only
-├── refined_strict_iter2/           # highest iteration = adopted fit
+├── refined_transit/                # refined fit, iteration 0 (TTV candidates only)
+├── refined_strict_iter1/           # later iterations of the refined fit
+├── refined_strict_iter2/
+├── iter_cascade_summary.json       # the iterations and the adopted one
 ├── joint/  joint_fixld/            # secondary fitters, if run
 └── sinusoidal_ttv_joint/           # sinusoidal ephemeris fit
 ```

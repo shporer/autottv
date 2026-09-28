@@ -13,10 +13,17 @@ Algorithm:
   2. For each transit, extract data window and normalize by OOT baseline
   3. Phase-fold all transits using individual T0s (not linear ephemeris)
   4. Fit the stacked data for: Rp/Rs, a/Rs, b^2, baseline, u1, u2
+  5. Re-time every transit with the new shape, and repeat 3-4 on the re-timed
+     transits until the shape settles (run_refined_iterations)
 
 Usage:
-    python refined_transit_params_for_ttv.py <TOI> [--cpus=N] [--fix-ld]
+    python refined_transit_params_for_ttv.py <TOI> [--cpus=N] [--fix-ld] [--max-iters=N]
     python refined_transit_params_for_ttv.py 924.01 --cpus=15
+
+The command line runs run_refined_iterations: the refined fit, then up to
+five iterations of re-timing and refitting, stopping once Rp/Rs, a/Rs and b
+each move by less than 1 sigma. --max-iters=0 runs the refined fit and one
+re-timing only.
 """
 
 import warnings
@@ -692,7 +699,8 @@ def refined_transit_params(toi, n_cpus=15, fix_ld=False, include_rejected=False,
     return refined_results
 
 
-def refit_individual_transits(toi, extra_epochs=None, n_cpus=15, sibling_mask_factor=None):
+def refit_individual_transits(toi, extra_epochs=None, n_cpus=15, sibling_mask_factor=None,
+                              subdir=None):
     """
     Refit individual transit times using refined shape parameters.
 
@@ -711,12 +719,15 @@ def refit_individual_transits(toi, extra_epochs=None, n_cpus=15, sibling_mask_fa
     sibling_mask_factor : float, optional
         Multiplier for sibling transit masking width (default 1.5x duration).
         Use larger values (e.g. 5.0) for deep sibling transits.
+    subdir : str, optional
+        Folder under the TOI directory that holds the refined shape to use and
+        receives the output (default 'refined_transit').
     """
     from scipy.ndimage import median_filter
 
     output_dir = Path(f'autottv_results_v2/TOI_{toi.replace(".", "_")}')
     results_path = output_dir / 'results.json'
-    refined_dir = output_dir / 'refined_transit'
+    refined_dir = output_dir / (subdir or 'refined_transit')
 
     with open(results_path) as f:
         results = json.load(f)
@@ -1023,12 +1034,111 @@ def refit_individual_transits(toi, extra_epochs=None, n_cpus=15, sibling_mask_fa
     return refit_results
 
 
+REFINED_MAX_ITERS = 5    # iterations after the first refined fit
+REFINED_SHAPE_TOL = 1.0  # stop when each shape parameter moves by less than this many sigma
+
+
+def _irr_t_mids(irr_path):
+    """{epoch: t0_fit} of the converged, non-extra transits in an individual_refit_results.json."""
+    with open(irr_path) as f:
+        fits = json.load(f).get('transit_fits') or []
+    return {int(f['epoch']): float(f['t0_fit']) for f in fits
+            if not f.get('is_extra_epoch', False) and f.get('converged', True)}
+
+
+def _refined_shape(results_path):
+    """{'rp_rs': (value, sigma), 'a_rs': ..., 'b': ...} from a refined-fit results.json."""
+    with open(results_path) as f:
+        params = json.load(f)['parameters']
+    return {k: (float(params[k]['value']), float(params[k].get('err', 0)) or 1e-9)
+            for k in ('rp_rs', 'a_rs', 'b')}
+
+
+def run_refined_iterations(toi, max_iters=REFINED_MAX_ITERS, shape_tol=REFINED_SHAPE_TOL,
+                           n_cpus=15, fix_ld=False, include_rejected=False,
+                           extra_epochs=None, sibling_mask_factor=None):
+    """
+    Iterate the refined fit until the transit shape stops moving.
+
+    Iteration 0 stacks the transits at their Step-2 times, refits the shape
+    (refined_transit/) and re-times every transit with it. Iteration
+    n = 1..max_iters refits the shape on iteration n-1's re-timed transits and
+    re-times them again (refined_strict_iter{n}/). The loop stops once Rp/Rs,
+    a/Rs and b each move by less than shape_tol times their previous
+    posterior sigma (paper, Section 6.1). This is the pattern of the per-TOI
+    cascades used for the paper, which also stopped after five iterations.
+
+    Returns a dict with each iteration's shape and largest shift, whether it
+    converged, and 'adopted_subdir', the last iteration written, which is the
+    result. The dict is also written to iter_cascade_summary.json.
+    """
+    toi_dir = Path(f'autottv_results_v2/TOI_{toi.replace(".", "_")}')
+
+    def fitted(subdir, override):
+        """Refit the shape in subdir and re-time the transits; None if either step failed."""
+        if refined_transit_params(toi, n_cpus=n_cpus, fix_ld=fix_ld,
+                                  include_rejected=include_rejected,
+                                  transit_times_override=override,
+                                  output_subdir=subdir) is None:
+            print(f"  Shape refit failed in {subdir}/; stopping")
+            return None
+        if refit_individual_transits(toi, extra_epochs=extra_epochs, n_cpus=n_cpus,
+                                     sibling_mask_factor=sibling_mask_factor,
+                                     subdir=subdir) is None:
+            print(f"  Re-timing failed in {subdir}/; stopping")
+            return None
+        return _refined_shape(toi_dir / subdir / 'results.json')
+
+    history, converged = [], False
+    print(f"\n{'='*60}\nRefined fit, iteration 0 (refined_transit/)\n{'='*60}")
+    shape = fitted('refined_transit', None)
+    if shape is not None:
+        history.append({'iter': 0, 'subdir': 'refined_transit', 'shape': shape,
+                        'max_shift_sigma': None})
+        for n in range(1, max_iters + 1):
+            override = _irr_t_mids(toi_dir / history[-1]['subdir'] / 'individual_refit_results.json')
+            if len(override) < 5:
+                print(f"  Only {len(override)} re-timed transits; stopping")
+                break
+            subdir = f'refined_strict_iter{n}'
+            print(f"\n{'='*60}\nRefined fit, iteration {n} ({subdir}/)\n{'='*60}")
+            new = fitted(subdir, override)
+            if new is None:
+                break
+            shift = max(abs(new[k][0] - shape[k][0]) / shape[k][1] for k in new)
+            history.append({'iter': n, 'subdir': subdir, 'shape': new, 'max_shift_sigma': shift})
+            print(f"  Largest shape change since iteration {n - 1}: {shift:.2f} sigma")
+            shape = new
+            if shift < shape_tol:
+                converged = True
+                break
+
+    adopted = history[-1]['subdir'] if history else None
+    summary = {'toi': toi, 'max_iters': max_iters, 'shape_tol': shape_tol,
+               'converged': converged, 'adopted_subdir': adopted, 'history': history}
+    if history:
+        with open(toi_dir / 'iter_cascade_summary.json', 'w') as f:
+            json.dump(summary, f, indent=2, default=float)
+        last = history[-1]['iter']
+        stale = sorted(d.name for d in toi_dir.glob('refined_strict_iter*')
+                       if d.name[len('refined_strict_iter'):].isdigit()
+                       and int(d.name[len('refined_strict_iter'):]) > last)
+        status = ('iteration 0 only' if last == 0 else
+                  f"{'converged' if converged else 'not converged'} after {last} iteration(s)")
+        print(f"\n  Adopted: {adopted}/ ({status})")
+        if stale:
+            print(f"  Note: {', '.join(stale)} {'is' if len(stale) == 1 else 'are'} not part of this "
+                  f"result (left from an earlier run, or an iteration that failed)")
+    return summary
+
+
 if __name__ == '__main__':
     toi = sys.argv[1] if len(sys.argv) > 1 else '924.01'
     n_cpus = 15
     fix_ld = False
     include_rejected = False
     refit_epochs = []
+    max_iters = REFINED_MAX_ITERS
     for arg in sys.argv[2:]:
         if arg.startswith('--cpus='):
             n_cpus = int(arg.split('=')[1])
@@ -1038,15 +1148,13 @@ if __name__ == '__main__':
             include_rejected = True
         elif arg.startswith('--refit-epochs='):
             refit_epochs = [int(e) for e in arg.split('=')[1].split(',')]
+        elif arg.startswith('--max-iters='):
+            max_iters = int(arg.split('=')[1])
 
     print(f"{'='*60}")
     print(f"Refined Transit Parameters for TOI {toi}")
     print(f"{'='*60}")
 
-    refined_transit_params(toi, n_cpus=n_cpus, fix_ld=fix_ld, include_rejected=include_rejected)
-
-    if refit_epochs:
-        print(f"\n{'='*60}")
-        print(f"Individual Transit Refit (extra epochs: {refit_epochs})")
-        print(f"{'='*60}")
-        refit_individual_transits(toi, extra_epochs=refit_epochs, n_cpus=n_cpus)
+    run_refined_iterations(toi, max_iters=max_iters, n_cpus=n_cpus, fix_ld=fix_ld,
+                           include_rejected=include_rejected,
+                           extra_epochs=refit_epochs or None)

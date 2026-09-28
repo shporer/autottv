@@ -192,9 +192,14 @@ what produce the TTV-aware parameters in the published tables.
 4. Refit the individual mid-times against the new shape.
 5. Repeat until the shape stops moving, up to five iterations.
 
-Output lands in `refined_strict_iter1/`, `refined_strict_iter2/`, and so on. **The highest
-available iteration is the adopted fit** — that is the source priority used when building
-the published tables, falling back to iteration 0 and then to the standard fit.
+"Stops moving" means $k$, $a/R_\star$ and $b$ each changed by less than $1\sigma$ since the
+previous iteration. `--max-iters=N` changes the cap; `--max-iters=0` stops after the first
+refit.
+
+Iteration 0 lands in `refined_transit/` and later ones in `refined_strict_iter1/`,
+`refined_strict_iter2/`, and so on; `iter_cascade_summary.json` names the adopted one. For
+the published tables **the highest available iteration was the adopted fit**, falling back
+to iteration 0 and then to the standard fit.
 
 ## Building the summary tables
 

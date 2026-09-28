@@ -179,7 +179,8 @@ exceeds the observed one, with a reporting floor of $10^{-5}$. Requires at least
 
 ## The iterative TTV-aware refit
 
-**Module:** `refined_transit_params_for_ttv.py` — runs only for TTV candidates
+**Module:** `run_refined_iterations` in `refined_transit_params_for_ttv.py`, run with
+`python refined_transit_params_for_ttv.py <TOI>` — runs only for TTV candidates
 
 Step 1 stacked the transits on a strict linear ephemeris. If the system has TTVs, that
 stack is *smeared*, and the recovered radius ratio is biased. The refit removes the smear:
@@ -187,10 +188,13 @@ stack is *smeared*, and the recovered radius ratio is biased. The refit removes 
 1. Shift each transit by its measured O−C, aligning the stack on observed times.
 2. Refit the transit shape on the realigned stack.
 3. Refit the individual mid-times against the new shape.
-4. Repeat, up to five iterations, until the shape stops moving.
+4. Repeat on the re-timed transits, up to five more times, until $k$, $a/R_\star$ and $b$
+   each move by less than $1\sigma$ from the previous iteration.
 
-Iterations are written to `refined_strict_iter1/`, `refined_strict_iter2/`, and so on, and
-**the highest available iteration is the adopted result**.
+The first refit is written to `refined_transit/` and later iterations to
+`refined_strict_iter1/`, `refined_strict_iter2/`, and so on. **The last iteration is the
+adopted result**; `iter_cascade_summary.json` records it, with the shape change at each
+step. `--max-iters=N` changes the cap of five.
 
 The magnitude of the effect is the central finding of the AutoTTV paper: about 20% of TTV
 candidates show a radius-ratio change exceeding three times the combined uncertainty, in

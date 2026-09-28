@@ -6,8 +6,10 @@ Search for TTV candidates among all analyzed TOIs using three detection criteria
   C2: Periodogram bootstrap FAP < TTV_FAP_THRESHOLD
   C3: weighted O-C RMS / median error > TTV_OC_RMS_OVER_ERR_THRESHOLD
 
-A TOI is a candidate if it meets at least one criterion and passes the
-leave-one-out test (C4, leave_one_out_test).
+A TOI is a candidate if at least one criterion it meets survives the
+per-criterion leave-one-out test (C4, leave_one_out_test). Its type is the
+surviving criterion with the highest priority: Periodic (C2), then Quadratic
+(C1), then Scatter (C3).
 
 Outputs:
   - ttv_candidates.csv: the candidates
@@ -19,6 +21,7 @@ import glob
 import os
 import sys
 import csv
+from multiprocessing import Pool
 import numpy as np
 from pathlib import Path
 
@@ -57,116 +60,128 @@ def weighted_oc_rms(oc, oc_err):
     return float(np.sqrt(var_w))
 
 
+# Permutations per removed transit when the leave-one-out test re-checks C2,
+# as in run_per_criterion_loo_v2.py, the test applied to the paper's candidates.
+N_PERMUTATIONS_LOO = 10_000
+
+
+def _loo_frequency_grid(time_epochs):
+    """Frequency grid for the C2 re-checks: 2/span up to 0.5/(median transit spacing)."""
+    time_span = time_epochs.max() - time_epochs.min()
+    if time_span <= 0 or len(time_epochs) < 2:
+        return None
+    dt_med = float(np.median(np.diff(np.sort(time_epochs))))
+    f_min = 2.0 / time_span
+    f_nyq = 0.5 / max(dt_med, 1e-9)
+    if f_nyq <= f_min:
+        return None
+    n_freq = max(200, int(config.PERIODOGRAM_OVERSAMPLING * time_span * (f_nyq - f_min)))
+    return np.linspace(f_min, f_nyq, n_freq)
+
+
+def _permutation_batch(args):
+    """Count permuted periodograms whose peak reaches obs_peak (one worker's share)."""
+    time_ep, oc, oc_err, freqs, obs_peak, seed, n_perms = args
+    rng = np.random.default_rng(seed)
+    n_exceed = 0
+    for _ in range(n_perms):
+        perm = rng.permutation(len(oc))
+        power = LombScargle(time_ep, oc[perm], dy=oc_err[perm]).power(freqs, normalization='psd')
+        if float(power.max()) >= obs_peak:
+            n_exceed += 1
+    return n_exceed
+
+
+def _permutation_fap(time_ep, oc, oc_err, freqs, obs_peak, seed_base, pool, n_workers):
+    """Permutation FAP from N_PERMUTATIONS_LOO shuffles, split across n_workers."""
+    per_worker = -(-N_PERMUTATIONS_LOO // n_workers)  # ceiling division
+    args = [(time_ep, oc, oc_err, freqs, obs_peak, seed_base + w, per_worker)
+            for w in range(n_workers)]
+    counts = pool.map(_permutation_batch, args) if pool is not None else map(_permutation_batch, args)
+    return (sum(counts) + 1) / (per_worker * n_workers + 1)
+
+
 def leave_one_out_test(epochs, oc_minutes, oc_err_minutes, period,
                        delta_bic_threshold, fap_threshold, oc_rms_over_err_threshold,
-                       c1_pass, c2_pass, c3_pass):
+                       c1_pass, c2_pass, c3_pass, pool=None, n_workers=1):
     """
-    Leave-one-out (LOO) jackknife test for TTV detection robustness.
+    Per-criterion leave-one-out (LOO) test (paper, Section 5.1).
 
-    For each transit, remove it and recheck whichever criteria (C1/C2/C3)
-    the TOI originally passed. The TOI passes C4 if all LOO iterations
-    still satisfy at least one of the originally-passing criteria.
+    Each criterion the TOI originally passed is recomputed with each transit
+    removed in turn, and it survives only if it still passes after every
+    removal. The TOI passes C4 if at least one criterion survives. This is
+    the test run_per_criterion_loo_v2.py applies in the analysis repository.
+
+    C2 is re-checked with N_PERMUTATIONS_LOO permutations per removal, split
+    across the workers of `pool` (serial when pool is None).
 
     Returns
     -------
-    passes_loo : bool
-        True if the detection survives removal of any single transit.
-    n_fail : int
-        Number of LOO iterations where no criterion was satisfied.
+    survives : dict
+        {'C1': bool or None, 'C2': ..., 'C3': ...}; None for a criterion the
+        TOI did not originally pass.
+    fail_at : dict
+        Per criterion: the 1-based index of the first removal that broke it,
+        0 if it survived, None if it was not tested.
     """
+    passed = {'C1': c1_pass, 'C2': c2_pass, 'C3': c3_pass}
+    survives = {k: (True if v else None) for k, v in passed.items()}
+    fail_at = {k: (0 if v else None) for k, v in passed.items()}
     n = len(epochs)
-    if n < 4:  # Need at least 3 transits after removing one
-        return False, n
+    if n < 4:  # need at least 3 transits after removing one
+        for k in survives:
+            if passed[k]:
+                survives[k], fail_at[k] = False, 1
+        return survives, fail_at
 
     epochs = np.asarray(epochs, dtype=float)
-    oc = np.asarray(oc_minutes)
-    oc_err = np.asarray(oc_err_minutes)
+    oc = np.asarray(oc_minutes, dtype=float)
+    oc_err = np.asarray(oc_err_minutes, dtype=float)
     time_epochs = epochs * period  # days
 
-    # Precompute frequency grid for periodogram. Matches the primary C2
-    # test (astropy LombScargle, weighted, median-cadence Nyquist with
-    # PERIODOGRAM_OVERSAMPLING). See docs/notes/2026-04-23-c4-loo-periodogram-inconsistency.md.
-    time_span = time_epochs.max() - time_epochs.min()
-    if time_span > 0 and len(time_epochs) >= 2:
-        dt_med = float(np.median(np.diff(np.sort(time_epochs))))
-        f_min = 2.0 / time_span
-        f_nyq = 0.5 / max(dt_med, 1e-9)
-        if f_nyq > f_min:
-            n_freq = max(200, int(config.PERIODOGRAM_OVERSAMPLING
-                                  * time_span * (f_nyq - f_min)))
-            frequencies = np.linspace(f_min, f_nyq, n_freq)
-        else:
-            frequencies = None
-    else:
-        frequencies = None
+    freqs = _loo_frequency_grid(time_epochs) if survives['C2'] else None  # grid of the full series
+
+    def fail(key, i):
+        survives[key], fail_at[key] = False, i + 1
 
     for i in range(n):
-        # Remove transit i
-        mask = np.ones(n, dtype=bool)
-        mask[i] = False
-        ep_loo = epochs[mask]
-        oc_loo = oc[mask]
-        oc_err_loo = oc_err[mask]
-        t_ep_loo = time_epochs[mask]
+        m = np.ones(n, dtype=bool)
+        m[i] = False
 
-        any_pass = False
-
-        # Re-check C1 (delta BIC) if it originally passed
-        if c1_pass and len(ep_loo) >= 3:
+        # C1: delta BIC of the quadratic over the linear ephemeris. Times are
+        # rebuilt from the O-C; the offset from T0 does not change delta BIC.
+        if survives['C1']:
             try:
-                eph = EphemerisAnalyzer(ep_loo, ep_loo * period + oc_loo / (24 * 60),
-                                        oc_err_loo / (24 * 60))
-                result = eph.analyze()
-                if result.delta_bic > delta_bic_threshold:
-                    any_pass = True
+                t_loo = epochs[m] * period + oc[m] / (24 * 60)
+                r = EphemerisAnalyzer(epochs[m], t_loo, oc_err[m] / (24 * 60)).analyze()
+                if not (r.delta_bic is not None and r.delta_bic > delta_bic_threshold):
+                    fail('C1', i)
             except Exception:
-                pass
+                fail('C1', i)
 
-        # Re-check C2 (periodogram with bootstrap FAP) if it originally
-        # passed. Uses astropy error-weighted LombScargle (PSD normalization)
-        # to match the primary C2 test that produces
-        # results.json.bootstrap_fap.
-        # See docs/notes/2026-04-23-c4-loo-periodogram-inconsistency.md.
-        if c2_pass and not any_pass and frequencies is not None and len(oc_loo) >= 5:
-            ls_loo = LombScargle(t_ep_loo, oc_loo, dy=oc_err_loo)
-            obs_peak = float(ls_loo.power(frequencies, normalization='psd').max())
+        # C3: weighted O-C rms over the median error
+        if survives['C3']:
+            rms = weighted_oc_rms(oc[m], oc_err[m])
+            med = float(np.median(oc_err[m]))
+            if rms is None or med <= 0 or rms / med <= oc_rms_over_err_threshold:
+                fail('C3', i)
 
-            # Bootstrap FAP with early stopping once running FAP > threshold
-            n_bootstrap = 100_000
-            check_interval = 500
-            n_exceed = 0
-            rng = np.random.default_rng(seed=42 + i)
+        # C2: permutation FAP of the Lomb-Scargle peak
+        if survives['C2']:
+            if freqs is None or m.sum() < 5:
+                fail('C2', i)
+            else:
+                t_loo, oc_loo, err_loo = time_epochs[m], oc[m], oc_err[m]
+                obs_peak = float(LombScargle(t_loo, oc_loo, dy=err_loo)
+                                 .power(freqs, normalization='psd').max())
+                fap = _permutation_fap(t_loo, oc_loo, err_loo, freqs, obs_peak,
+                                       42 + i, pool, n_workers)
+                if fap >= fap_threshold:
+                    fail('C2', i)
 
-            for j in range(n_bootstrap):
-                perm = rng.permutation(len(oc_loo))
-                p_shuf = LombScargle(t_ep_loo, oc_loo[perm], dy=oc_err_loo[perm]).power(
-                    frequencies, normalization='psd')
-                if p_shuf.max() >= obs_peak:
-                    n_exceed += 1
-                if (j + 1) % check_interval == 0:
-                    running_fap = (n_exceed + 1) / (j + 2)
-                    if running_fap > fap_threshold:
-                        break
-
-            fap_loo = (n_exceed + 1) / (j + 2)
-            if fap_loo < fap_threshold:
-                any_pass = True
-
-        # Re-check C3 (O-C ratio) if it originally passed.
-        # Scatter is the inverse-variance-weighted RMS about the weighted mean.
-        if c3_pass and not any_pass:
-            rms_loo = weighted_oc_rms(oc_loo, oc_err_loo)
-            median_err_loo = np.median(oc_err_loo)
-            if rms_loo is not None and median_err_loo > 0:
-                ratio_loo = rms_loo / median_err_loo
-                if ratio_loo > oc_rms_over_err_threshold:
-                    any_pass = True
-
-        # Early termination: one failure means C4 fails
-        if not any_pass:
-            return False, i + 1
-
-    return True, 0
+        if not any(survives.values()):
+            break
+    return survives, fail_at
 
 
 def find_ttv_candidates(
@@ -177,7 +192,8 @@ def find_ttv_candidates(
     require_converged=False,
     exclude_tois=None,
     output_csv='ttv_candidates.csv',
-    verbose=True
+    verbose=True,
+    n_workers=None
 ):
     """
     Scan all results.json files and find TTV candidates.
@@ -200,6 +216,8 @@ def find_ttv_candidates(
         Output CSV file path.
     verbose : bool
         Print progress and results.
+    n_workers : int, optional
+        Processes for the C2 leave-one-out permutations. Default: all CPUs.
 
     Returns
     -------
@@ -216,6 +234,9 @@ def find_ttv_candidates(
     n_c1c2 = 0
     n_c1c3 = 0
     n_c2c3 = 0
+
+    n_workers = n_workers or os.cpu_count() or 1
+    pool = None  # started at the first C2 leave-one-out test
 
     for f in all_tois:
         try:
@@ -288,18 +309,24 @@ def find_ttv_candidates(
             n_transits = ind.get('n_transits_used', 0)
             oc_rms_out = ind.get('oc_rms_minutes', None)
 
-            # C4: Leave-one-out test
+            # C4: per-criterion leave-one-out test
             if len(oc_values) >= 4:
                 loo_epochs = np.array([v['epoch'] for v in oc_values])
                 loo_oc = np.array([v['oc_minutes'] for v in oc_values])
                 loo_err = np.array([v['oc_err_minutes'] for v in oc_values])
-                c4, loo_n_fail = leave_one_out_test(
+                if c2 and pool is None and n_workers > 1:
+                    pool = Pool(n_workers)
+                loo, _ = leave_one_out_test(
                     loo_epochs, loo_oc, loo_err, period,
                     delta_bic_threshold, fap_threshold, oc_rms_over_err_threshold,
-                    c1, c2, c3)
+                    c1, c2, c3, pool=pool, n_workers=n_workers)
             else:
-                c4 = False
-                loo_n_fail = len(oc_values)
+                loo = {'C1': False if c1 else None, 'C2': False if c2 else None,
+                       'C3': False if c3 else None}
+            c4 = any(v is True for v in loo.values())
+            loo_n_fail = sum(1 for v in loo.values() if v is False)  # criteria that failed LOO
+            ttv_type = ('Periodic' if loo['C2'] else 'Quadratic' if loo['C1']
+                        else 'Scatter' if loo['C3'] else None)
 
             # dP/dE from quadratic ephemeris
             quad = eph.get('quadratic', {})
@@ -339,10 +366,18 @@ def find_ttv_candidates(
                 'C1': c1,
                 'C2': c2,
                 'C3': c3,
+                'C1_LOO': loo['C1'],
+                'C2_LOO': loo['C2'],
+                'C3_LOO': loo['C3'],
+                'TTV type': ttv_type,
                 'C4_LOO': c4,
                 'LOO_n_fail': loo_n_fail,
                 'converged': converged,
             })
+
+    if pool is not None:
+        pool.close()
+        pool.join()
 
     # Sort by delta BIC (strongest first)
     candidates.sort(key=lambda x: -(x['dBIC'] or 0))
@@ -353,7 +388,8 @@ def find_ttv_candidates(
     # Write CSV (only LOO-passing)
     if output_csv:
         fieldnames = ['TOI', 'TIC_ID', 'Disposition', 'Period', 'Rhat', 'N_tr', 'dBIC', 'FAP',
-                      'OC_ratio', 'TTV_period', 'dPdE', 'dPdE_err', 'C1', 'C2', 'C3', 'C4_LOO', 'LOO_n_fail']
+                      'OC_ratio', 'TTV_period', 'dPdE', 'dPdE_err', 'C1', 'C2', 'C3',
+                      'C1_LOO', 'C2_LOO', 'C3_LOO', 'TTV type', 'C4_LOO', 'LOO_n_fail']
         with open(output_csv, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
             writer.writeheader()
@@ -379,6 +415,10 @@ def find_ttv_candidates(
         n_c4 = sum(1 for c in candidates if c.get('C4_LOO'))
         print(f"Any one (C1 | C2 | C3):       {n_any}")
         print(f"C4 (LOO survives):            {n_c4}")
+        for key, name in (("C2", "Periodic"), ("C1", "Quadratic"), ("C3", "Scatter")):
+            n_surv = sum(1 for c in candidates if c.get(f"{key}_LOO") is True)
+            n_type = sum(1 for c in candidates if c.get("TTV type") == name)
+            print(f"  {key} survives LOO: {n_surv:5d}   type {name}: {n_type}")
         print(f"")
         if candidates:
             print(f"Saved: {output_csv}")
@@ -387,7 +427,7 @@ def find_ttv_candidates(
             print(f"{'-'*67}")
             for c in candidates:
                 fap_str = f"{c['FAP']:.1e}" if c['FAP'] else '?'
-                loo_str = 'PASS' if c.get('C4_LOO') else f"F{c.get('LOO_n_fail', '?')}"
+                loo_str = c['TTV type'][:4] if c.get('C4_LOO') else 'FAIL'
                 print(f"{c['TOI']:<12} {c['dBIC']:>10.2f} {fap_str:>12} {c['OC_ratio']:>10.2f} {c['N_tr']:>6} {c['Rhat']:>8.4f} {loo_str:>5}")
 
     return candidates

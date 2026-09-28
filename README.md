@@ -94,9 +94,9 @@ These re-use the per-TOI `autottv_results_v2/TOI_<X>/results.json` produced by t
 
 | Script | Purpose |
 |--------|---------|
-| `find_ttv_candidates.py` | Apply the detection criteria — quadratic ΔBIC (C1), periodogram FAP (C2), O–C-RMS / median-error ratio (C3) — to flag TTV candidates. |
+| `find_ttv_candidates.py` | Apply the detection criteria — quadratic ΔBIC (C1), periodogram FAP (C2), O–C-RMS / median-error ratio (C3) — to flag TTV candidates. Each criterion must survive a per-criterion leave-one-out test, and the type follows from the surviving criteria. |
 | `fit_joint_sinusoidal_ttv.py` | Fit a linear ephemeris plus a sinusoid to the transit times of the TOIs listed in `c2_loo_survivors.csv` (emcee). |
-| `refined_transit_params_for_ttv.py` | Re-stack transits at their individually-fitted T_mids and re-fit the shape (de-smears TTV systems that the linear-ephemeris stack biases). |
+| `refined_transit_params_for_ttv.py` | Re-stack transits at their individually-fitted T_mids and re-fit the shape (de-smears TTV systems that the linear-ephemeris stack biases). Iterates, up to 5 times, until the shape moves by less than 1σ. |
 
 ---
 
@@ -121,7 +121,7 @@ autottv/
 ├── run_full_analysis.py              # main 4-step pipeline
 ├── run_batch_lines.sh                # batch driver (lines from filtered catalog)
 ├── find_ttv_candidates.py            # TTV detection criteria (C1/C2/C3)
-├── refined_transit_params_for_ttv.py # refined shift-and-stack re-fit
+├── refined_transit_params_for_ttv.py # iterative refined shift-and-stack re-fit
 ├── filter_toi_catalog.py             # catalog filtering / transit counting
 ├── compute_transit_snr.py            # per-transit SNR (used by filter_toi_catalog)
 ├── fit_joint_sinusoidal_ttv.py       # joint sinusoidal fit of the transit times
