@@ -2,8 +2,10 @@ __pycache__/
 *.pyc
 *.pyo
 .DS_Store
-autottv_results_v2/
+autottv_results_v2/*
 *.npy
+# ...except the SPOC CDPP sample that compute_transit_snr.py reads
+!autottv_results_v2/spoc_cdpp_sampled.npy
 .ipynb_checkpoints/
 .worktrees/
 

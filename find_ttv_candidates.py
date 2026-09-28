@@ -388,13 +388,22 @@ def find_ttv_candidates(
     return candidates
 
 
-def load_rejected_tois(xlsx_path='rejected_TOIs.xlsx'):
-    """Load rejected TOI list from xlsx."""
+def load_rejected_tois(xlsx_path='rejected_TOIs_list.xlsx', csv_path='rejected_TOIs_list.csv'):
+    """Load the rejected-TOI list.
+
+    Reads rejected_TOIs_list.xlsx (TOI and TIC ID in the first two columns,
+    no header row) when it exists, as in the private repo, and otherwise
+    rejected_TOIs_list.csv, its export in the public repo. Re-export the CSV
+    after editing the xlsx.
+    """
+    if not os.path.exists(xlsx_path) and os.path.exists(csv_path):
+        with open(csv_path, newline='') as f:
+            return {row['TOI'].strip() for row in csv.DictReader(f) if '.' in row['TOI']}
     import openpyxl
     wb = openpyxl.load_workbook(xlsx_path)
     ws = wb.active
     rejected = set()
-    for row in ws.iter_rows(min_row=2, values_only=True):
+    for row in ws.iter_rows(min_row=1, values_only=True):  # no header row; text cells are skipped below
         toi = row[0]
         if toi and isinstance(toi, (int, float, str)):
             s = str(toi)
