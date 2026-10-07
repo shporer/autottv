@@ -37,6 +37,25 @@ smearing of the transit shape by a long exposure.
 - Transits of **sibling planets** in the same system are masked, so a neighbour's transit
   cannot contaminate the baseline. Disable with `--no-mask`.
 
+### QLP timestamp errors
+
+The QLP light curves of Sectors 14 and 15 carry barycentric-correction errors of up to
+10.6 minutes: QLP used the observer position $(Y, Z, 0)$, with $Y$ and $Z$ the ecliptic
+coordinates of the observer's barycentric position, in place of its equatorial position.
+Those of Sector 80, and of the second orbit of Sector 85 for one star, carry a smaller
+error of the kind the QLP team documented for Sectors 74–79. Left uncorrected, these
+offsets can mimic TTVs.
+
+`qlp_time_fix.py` computes both errors from the Earth's barycentric position. The affected
+sectors are listed in `qlp_time_errors.csv`, and the QLP data span of each affected star in
+`qlp_time_spans.csv`. With `--qlp-time-fix`, `run_full_analysis.py` corrects the affected
+QLP timestamps in memory before fitting (the cache is not changed) and records what it
+applied under `qlp_time_fix` in `results.json`. Without it the timestamps are used as
+delivered, and `QLPTimeFix().correction(tic, toi, t_mid)` gives the shift, in seconds, to
+add to a transit time measured from them. The error changes by less than 1 s over a
+transit, so correcting the measured time is equivalent to refitting a corrected light
+curve.
+
 ### Identifying transits
 
 A transit counts as *full* when data extend to at least `TRANSIT_COVERAGE_FACTOR` (1.5)

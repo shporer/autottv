@@ -1,0 +1,5 @@
+tic,sector,orbit,model,note
+all,14,all,s1415,"QLP S14: observer position (Y_ecl, Z_ecl, 0); found 2026-10-04 from the cached timestamps"
+all,15,all,s1415,"QLP S15: as S14"
+272829240,85,2,s7479,"QLP S85 orbit 2 of TIC 272829240 (TOI-7125.01): ecliptic-frame ephemeris (S74-79 type); orbit 1 and the other cached S85 star are correct"
+all,80,all,s7479,"QLP S80: ecliptic-frame ephemeris (S74-79 type); all 9 audited stars (6 cached, 3 downloaded for the D2 audit, Oct 4)"

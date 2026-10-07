@@ -112,6 +112,11 @@ Parameter order matches `PARAM_NAMES` in `run_full_analysis.py`. Note that index
 
 Built by `build_all_transit_times.py` and `build_fit_params_tables.py`.
 
+!!! note
+    These two scripts are not part of this repository; the tables are described here for
+    reference. The README's "Reproducing the paper" section describes how the published
+    tables were assembled.
+
 ### `tables/transit_times.csv`
 
 The publishable transit-time catalog: `used == True` rows only.
@@ -168,4 +173,5 @@ python build_fit_params_tables.py
 ```
 
 Both are idempotent and re-read every per-TOI `results.json`, so they can be run after any
-partial re-analysis.
+partial re-analysis. (Neither is part of this repository; see the note under
+[Summary tables](#summary-tables).)

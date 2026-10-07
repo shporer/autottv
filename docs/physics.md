@@ -166,8 +166,8 @@ What curvature usually means instead:
 - **A long-period companion**, via dynamical perturbation or light-travel time.
 - **Apsidal precession.**
 - **An error in the catalog period**, which produces a linear O−C drift that a quadratic
-  fit will absorb. Worth ruling out with `run_bls_highres.py` before believing a
-  strong ΔBIC.
+  fit will absorb. Worth ruling out, for example with a high-resolution BLS search,
+  before believing a strong ΔBIC.
 
 The published analysis found *no* quadratic candidate with a period derivative consistent
 with tidal decay: over half were positive, and every negative value exceeded the WASP-12 b

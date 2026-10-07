@@ -305,6 +305,11 @@ def fit_one_toi(toi_str):
     p0[:, 1] = np.clip(p0[:, 1], priors["P_lo"]+1e-9,  priors["P_hi"]-1e-9)
     p0[:, 2] = np.clip(p0[:, 2], priors["A_lo"]+1e-3,  priors["A_hi"]-1e-3)
     p0[:, 3] = np.clip(p0[:, 3], priors["P_TTV_lo"]+1e-3, priors["P_TTV_hi"]-1e-3)
+    if priors["P_TTV_hi"] - priors["P_TTV_lo"] <= 2e-3:
+        # A P_TTV prior no wider than the 1e-3 d clip margins (2026-10; none of the published fits)
+        # would clip every walker to the same P_TTV, which the stretch move can never leave:
+        # start the walkers uniformly within the prior instead.
+        p0[:, 3] = np.random.uniform(priors["P_TTV_lo"], priors["P_TTV_hi"], N_WALKERS)
     if PHI_PRIOR_RANGE == "minus_pi_pi":
         p0[:, 4] = ((p0[:, 4] + np.pi) % (2 * np.pi)) - np.pi
     else:
@@ -349,7 +354,11 @@ def fit_one_toi(toi_str):
         new_state[:, 0] = np.clip(new_state[:, 0], priors["T0_lo"]+1e-6, priors["T0_hi"]-1e-6)
         new_state[:, 1] = np.clip(new_state[:, 1], priors["P_lo"]+1e-9,  priors["P_hi"]-1e-9)
         new_state[:, 2] = np.clip(new_state[:, 2], priors["A_lo"]+1e-3,  priors["A_hi"]-1e-3)
-        new_state[:, 3] = np.clip(new_state[:, 3], priors["P_TTV_lo"]+1e-3, priors["P_TTV_hi"]-1e-3)
+        if priors["P_TTV_hi"] - priors["P_TTV_lo"] > 2e-3:
+            new_state[:, 3] = np.clip(new_state[:, 3], priors["P_TTV_lo"]+1e-3, priors["P_TTV_hi"]-1e-3)
+        else:  # narrow P_TTV prior, as above: keep the jittered walkers inside it without collapsing them
+            eps = 1e-3 * (priors["P_TTV_hi"] - priors["P_TTV_lo"])
+            new_state[:, 3] = np.clip(new_state[:, 3], priors["P_TTV_lo"]+eps, priors["P_TTV_hi"]-eps)
         if PHI_PRIOR_RANGE == "minus_pi_pi":
             new_state[:, 4] = ((new_state[:, 4] + np.pi) % (2 * np.pi)) - np.pi
         else:

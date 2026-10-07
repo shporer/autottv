@@ -18,7 +18,11 @@ Algorithm:
 
 Usage:
     python refined_transit_params_for_ttv.py <TOI> [--cpus=N] [--fix-ld] [--max-iters=N]
+        [--results-root=DIR]
     python refined_transit_params_for_ttv.py 924.01 --cpus=15
+
+--results-root reads and writes TOI_*/ under DIR instead of autottv_results_v2
+(use it with run_full_analysis.py --results-root=DIR for test runs).
 
 The command line runs run_refined_iterations: the refined fit, then up to
 five iterations of re-timing and refitting, stopping once Rp/Rs, a/Rs and b
@@ -47,6 +51,8 @@ from autottv_pipeline_v2.convergence import compute_rhat_split
 from autottv_pipeline_v2.individual_transit_fitter import IndividualTransitFitter as ModularIndividualTransitFitter
 from autottv_pipeline_v2 import config
 from run_full_analysis import normalize_to_oot_no_eclipse, identify_transits
+
+RESULTS_ROOT_DEFAULT = 'autottv_results_v2'
 
 # Module-level shared data for multiprocessing
 _SHARED = {}
@@ -133,7 +139,8 @@ def _log_probability(theta):
 def refined_transit_params(toi, n_cpus=15, fix_ld=False, include_rejected=False,
                             transit_times_override=None, output_subdir=None,
                             rp_rs_prior=None, a_rs_prior=None,
-                            init_rp_rs=None, init_a_rs=None, init_b=None):
+                            init_rp_rs=None, init_a_rs=None, init_b=None,
+                            results_root=RESULTS_ROOT_DEFAULT):
     """
     Fit refined transit parameters using individual transit times.
 
@@ -154,8 +161,10 @@ def refined_transit_params(toi, n_cpus=15, fix_ld=False, include_rejected=False,
     output_subdir : str, optional
         Sub-folder name under TOI dir for outputs (default 'refined_transit').
         Use 'refined_transit_iter1' (etc.) for iteration runs.
+    results_root : str
+        Results tree that holds TOI_*/results.json and receives the outputs.
     """
-    output_dir = Path(f'autottv_results_v2/TOI_{toi.replace(".", "_")}')
+    output_dir = Path(results_root) / f'TOI_{toi.replace(".", "_")}'
     results_path = output_dir / 'results.json'
     refined_dir = output_dir / (output_subdir or 'refined_transit')
     refined_dir.mkdir(exist_ok=True)
@@ -700,7 +709,7 @@ def refined_transit_params(toi, n_cpus=15, fix_ld=False, include_rejected=False,
 
 
 def refit_individual_transits(toi, extra_epochs=None, n_cpus=15, sibling_mask_factor=None,
-                              subdir=None):
+                              subdir=None, results_root=RESULTS_ROOT_DEFAULT):
     """
     Refit individual transit times using refined shape parameters.
 
@@ -722,10 +731,12 @@ def refit_individual_transits(toi, extra_epochs=None, n_cpus=15, sibling_mask_fa
     subdir : str, optional
         Folder under the TOI directory that holds the refined shape to use and
         receives the output (default 'refined_transit').
+    results_root : str
+        Results tree that holds TOI_*/ (default 'autottv_results_v2').
     """
     from scipy.ndimage import median_filter
 
-    output_dir = Path(f'autottv_results_v2/TOI_{toi.replace(".", "_")}')
+    output_dir = Path(results_root) / f'TOI_{toi.replace(".", "_")}'
     results_path = output_dir / 'results.json'
     refined_dir = output_dir / (subdir or 'refined_transit')
 
@@ -1056,7 +1067,8 @@ def _refined_shape(results_path):
 
 def run_refined_iterations(toi, max_iters=REFINED_MAX_ITERS, shape_tol=REFINED_SHAPE_TOL,
                            n_cpus=15, fix_ld=False, include_rejected=False,
-                           extra_epochs=None, sibling_mask_factor=None):
+                           extra_epochs=None, sibling_mask_factor=None,
+                           results_root=RESULTS_ROOT_DEFAULT):
     """
     Iterate the refined fit until the transit shape stops moving.
 
@@ -1072,19 +1084,20 @@ def run_refined_iterations(toi, max_iters=REFINED_MAX_ITERS, shape_tol=REFINED_S
     converged, and 'adopted_subdir', the last iteration written, which is the
     result. The dict is also written to iter_cascade_summary.json.
     """
-    toi_dir = Path(f'autottv_results_v2/TOI_{toi.replace(".", "_")}')
+    toi_dir = Path(results_root) / f'TOI_{toi.replace(".", "_")}'
 
     def fitted(subdir, override):
         """Refit the shape in subdir and re-time the transits; None if either step failed."""
         if refined_transit_params(toi, n_cpus=n_cpus, fix_ld=fix_ld,
                                   include_rejected=include_rejected,
                                   transit_times_override=override,
-                                  output_subdir=subdir) is None:
+                                  output_subdir=subdir,
+                                  results_root=results_root) is None:
             print(f"  Shape refit failed in {subdir}/; stopping")
             return None
         if refit_individual_transits(toi, extra_epochs=extra_epochs, n_cpus=n_cpus,
                                      sibling_mask_factor=sibling_mask_factor,
-                                     subdir=subdir) is None:
+                                     subdir=subdir, results_root=results_root) is None:
             print(f"  Re-timing failed in {subdir}/; stopping")
             return None
         return _refined_shape(toi_dir / subdir / 'results.json')
@@ -1139,6 +1152,7 @@ if __name__ == '__main__':
     include_rejected = False
     refit_epochs = []
     max_iters = REFINED_MAX_ITERS
+    results_root = RESULTS_ROOT_DEFAULT
     for arg in sys.argv[2:]:
         if arg.startswith('--cpus='):
             n_cpus = int(arg.split('=')[1])
@@ -1150,6 +1164,8 @@ if __name__ == '__main__':
             refit_epochs = [int(e) for e in arg.split('=')[1].split(',')]
         elif arg.startswith('--max-iters='):
             max_iters = int(arg.split('=')[1])
+        elif arg.startswith('--results-root='):
+            results_root = arg.split('=', 1)[1].strip().rstrip('/')
 
     print(f"{'='*60}")
     print(f"Refined Transit Parameters for TOI {toi}")
@@ -1157,4 +1173,5 @@ if __name__ == '__main__':
 
     run_refined_iterations(toi, max_iters=max_iters, n_cpus=n_cpus, fix_ld=fix_ld,
                            include_rejected=include_rejected,
-                           extra_epochs=refit_epochs or None)
+                           extra_epochs=refit_epochs or None,
+                           results_root=results_root)

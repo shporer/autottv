@@ -1,7 +1,7 @@
 {
   "title": "AutoTTV: automated transit-timing pipeline for TESS, v1.0.0",
   "upload_type": "software",
-  "description": "AutoTTV is an automated Bayesian pipeline for homogeneous transit-timing analysis of TESS Objects of Interest (TOIs). It fits the phase-folded light curve with an analytic transit model sampled by Markov chain Monte Carlo, measures individual mid-transit times with the transit shape held fixed, and searches the timing residuals for periodic signals, long-term period changes and excess scatter. This release accompanies Shporer & Drori, \"AutoTTV: Homogeneous Transit Timing of 3,650 TESS TOIs and the Radius Bias of Strict-Period Phase Folding\" (submitted to ApJS).",
+  "description": "AutoTTV is an automated Bayesian pipeline for homogeneous transit-timing analysis of TESS Objects of Interest (TOIs). It fits the phase-folded light curve with an analytic transit model sampled by Markov chain Monte Carlo, measures individual mid-transit times with the transit shape held fixed, and searches the timing residuals for periodic signals, long-term period changes and excess scatter. For TTV candidates it refits the transit shape on the measured transit times, and it corrects the known timestamp errors of some QLP light curves. This release accompanies Shporer & Drori, \"AutoTTV: Homogeneous Transit Timing of 3,650 TESS TOIs and the Radius Bias of Strict-Period Phase Folding\" (submitted to ApJS).",
   "creators": [
     {
       "name": "Shporer, Avi",

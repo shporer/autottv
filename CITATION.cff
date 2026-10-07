@@ -1,6 +1,7 @@
 cff-version: 1.2.0
 message: "If you use AutoTTV, please cite it with the metadata below, together with the paper that describes it (Shporer & Drori, submitted to ApJS)."
 title: "AutoTTV: automated transit-timing pipeline for TESS"
+version: "1.0.0"
 type: software
 authors:
   - family-names: Shporer

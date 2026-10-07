@@ -10,6 +10,12 @@ Includes:
 - O-C (Observed minus Calculated) plot
 - TTV periodogram
 - Chain saving
+
+Options include --results-root=DIR (write TOI_*/ under DIR instead of
+autottv_results_v2, for test runs that must not overwrite results),
+--qlp-time-fix (correct the known QLP timestamp errors with qlp_time_fix.py
+before fitting) and --step1-only (stop after the phase-folded fit, keeping
+its chains).
 """
 
 import warnings
@@ -71,6 +77,10 @@ PERIOD_ERR_OVERRIDE = None  # Override period prior width (sigma)
 T0_ERR_OVERRIDE = None      # Override T0 prior width (sigma)
 DURATION_OVERRIDE = None    # Override transit duration (hours) for window calculation
 DUR_PRIOR = False           # Add Gaussian prior on a/Rs from catalog duration
+RESULTS_ROOT = 'autottv_results_v2'  # Output tree; --results-root=DIR sends test runs to a separate tree
+QLP_TIME_FIX = False        # --qlp-time-fix: correct known QLP timestamp errors (qlp_time_fix.py) before fitting (2026-10)
+QLP_FIX_APPLIED = []
+STEP1_ONLY = False          # --step1-only: stop after the phase-folded (Step-1) fit, saving its chains (2026-10, Zenodo)
 for arg in sys.argv[2:]:
     if arg.startswith('--cpus='):
         try:
@@ -112,6 +122,12 @@ for arg in sys.argv[2:]:
             pass
     elif arg == '--dur-prior':
         DUR_PRIOR = True
+    elif arg.startswith('--results-root='):
+        RESULTS_ROOT = arg.split('=', 1)[1].strip().rstrip('/')
+    elif arg == '--qlp-time-fix':
+        QLP_TIME_FIX = True
+    elif arg == '--step1-only':
+        STEP1_ONLY = True
 
 # Global state for multiprocessing (needed because Pool can't pickle class methods)
 _MCMC_SHARED_DATA = {}
@@ -432,8 +448,8 @@ def _fit_single_transit(args):
         'ess': getattr(result, 'ess', {})
     }
 
-# Output directory
-OUTPUT_DIR = Path(__file__).parent / "autottv_results_v2" / f"TOI_{TOI.replace('.', '_')}"
+# Output directory (--results-root sends test runs to a separate tree)
+OUTPUT_DIR = Path(__file__).parent / RESULTS_ROOT / f"TOI_{TOI.replace('.', '_')}"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Parameter names (now includes limb darkening)
@@ -2457,6 +2473,19 @@ def main():
         print(f"\n  ERROR: Failed to load TESS data for TIC {tic_id} (TOI {TOI}). Skipping.", flush=True)
         return
 
+    if QLP_TIME_FIX:                     # 2026-10: known QLP timestamp errors (S14/S15, ...), corrected in memory only
+        import qlp_time_fix as _qtf
+        _qfix = _qtf.QLPTimeFix()
+        for lc in loader.lightcurves:
+            if lc.source == 'QLP':
+                lc.time, _applied = _qfix.correct_lightcurve(int(tic_id), TOI, lc.sector, lc.time)
+                for a in _applied:
+                    QLP_FIX_APPLIED.append(a)
+                    print(f"  QLP time fix: sector {a['sector']} orbit {a['orbit']} ({a['model']}): "
+                          f"{a['n_points']} points shifted by {a['shift_s_min']:+.1f} to {a['shift_s_max']:+.1f} s", flush=True)
+        if not QLP_FIX_APPLIED:
+            print("  QLP time fix: no QLP sector of this star has a known timestamp error", flush=True)
+
     sector_data = {}
     for lc in loader.lightcurves:
         # Use all sectors if SECTORS_TO_USE is None, otherwise filter
@@ -2697,6 +2726,24 @@ def main():
         print(f"  u2: {params['u2']['value']:.4f} +/- {params['u2']['err']:.4f} (prior: {fitter.u2:.4f})", flush=True)
     print(f"  Converged: {diagnostics.get('converged', 'Unknown')}", flush=True)
 
+    if STEP1_ONLY:
+        # --step1-only (2026-10, for the Zenodo posterior samples): keep the phase-folded fit's chains and
+        # parameters and stop; the transit times and everything after them are not redone.
+        save_chains(fitter, OUTPUT_DIR)
+        rv = diagnostics.get('rhat', [])
+        step1 = {'toi': TOI, 'step1_only': True, 'fix_ld': bool(FIX_LD), 'param_names': list(PARAM_NAMES),
+                 'parameters': params,
+                 'convergence': {'converged': bool(diagnostics.get('converged', False)),
+                                 'max_rhat': float(np.max(rv)) if len(rv) else None,
+                                 'rhat': {n: float(rv[i]) for i, n in enumerate(PARAM_NAMES) if i < len(rv)}},
+                 'settings': {'argv': sys.argv[1:], 'period_override': PERIOD_OVERRIDE, 't0_override': T0_OVERRIDE,
+                              'n_walkers': N_WALKERS, 'n_burn': N_BURN, 'n_steps_max': N_STEPS_MAX},
+                 **({'qlp_time_fix': {'version': 'v1', 'applied': QLP_FIX_APPLIED}} if QLP_TIME_FIX else {})}
+        with open(OUTPUT_DIR / 'step1_results.json', 'w') as f:
+            json.dump(step1, f, indent=2, default=lambda o: o.tolist() if hasattr(o, 'tolist') else str(o))
+        print(f"  --step1-only: chains and step1_results.json written to {OUTPUT_DIR}; stopping", flush=True)
+        return
+
     # Individual transit fitting
     print("\n" + "="*60, flush=True)
     print("INDIVIDUAL TRANSIT FITTING", flush=True)
@@ -2853,6 +2900,7 @@ def main():
     if len(all_transit_fits) == 0:
         print("\n  No transits to filter - skipping outlier filtering", flush=True)
         transit_fits = []
+        unconverged_fits = []
         excluded_by_t0err = []
         excluded_by_oc = []
         n_excluded_t0err = 0
@@ -2864,6 +2912,7 @@ def main():
         # Filter unconverged transits first
         print("\n  Filtering outlier transits...", flush=True)
         converged_fits = [tf for tf in all_transit_fits if tf.get('converged', True)]
+        unconverged_fits = [tf for tf in all_transit_fits if not tf.get('converged', True)]
         n_unconverged = len(all_transit_fits) - len(converged_fits)
         if n_unconverged > 0:
             print(f"    Removed {n_unconverged} unconverged transits", flush=True)
@@ -3251,6 +3300,7 @@ def main():
     results_json = {
         'toi': TOI,
         'tic_id': tic_id,
+        **({'qlp_time_fix': {'version': 'v1', 'applied': QLP_FIX_APPLIED}} if QLP_TIME_FIX else {}),
         'sectors': sectors_used,
         'n_points_total': len(time_combined),
         'normalization': normalization_info,
@@ -3289,8 +3339,17 @@ def main():
             'n_transits_used': len(transit_fits),
             'n_excluded_by_t0err': len(excluded_by_t0err),
             'n_excluded_by_oc': len(excluded_by_oc),
-            'n_unconverged': n_unconverged_used,
+            'n_unconverged': n_unconverged_used,           # unconverged among the USED transits (0 by design)
             'all_converged': n_unconverged_used == 0,
+            # 2026-10-04: the transits dropped as unconverged were not recorded anywhere
+            # (n_unconverged above counts only used ones); keep their fits for the record.
+            'n_unconverged_dropped': len(unconverged_fits),
+            'unconverged_transits_excluded': [
+                {'epoch': int(tf['epoch']), 't_expected': float(tf['t_expected']),
+                 't0_fit': float(tf['t0_fit']), 't0_err': float(tf['t0_err']),
+                 'max_rhat': float(tf.get('max_rhat', float('nan'))), 'n_points': int(tf.get('n_points', 0))}
+                for tf in unconverged_fits
+            ],
             'partial_transits_excluded': [
                 {
                     'epoch': int(pt['epoch']),

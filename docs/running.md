@@ -19,6 +19,9 @@ as `--flag` or `--flag=value`. There is no `--help`; this is the complete list.
 | `--fix-ld` | Hold $u_1, u_2$ at the theoretical Claret values instead of fitting them. |
 | `--ld-width=X` | Override the limb-darkening prior width. |
 | `--no-mask` | Do not mask transits of sibling planets in the same system. |
+| `--qlp-time-fix` | Correct the known QLP timestamp errors (`qlp_time_fix.py`, sectors listed in `qlp_time_errors.csv`) before fitting. See [QLP timestamp errors](pipeline.md#qlp-timestamp-errors). |
+| `--results-root=DIR` | Write `TOI_<X>/` under `DIR` instead of `autottv_results_v2/`, so that a test run cannot overwrite results. |
+| `--step1-only` | Stop after the Step 1 phase-folded fit, saving its chains and `step1_results.json`. |
 
 Unrecognised flags are ignored silently, and malformed values fall back to the default.
 Nothing raises an error, so a mistyped flag runs with settings you did not intend:
@@ -38,8 +41,8 @@ you asked for.
 `--period` and `--t0` matter when the known ephemeris is wrong or stale. A period error
 propagates into a linear drift in the O−C diagram that can masquerade as a quadratic
 ephemeris, so if a target shows a strong ΔBIC with a clean parabola, re-deriving the
-period with `run_bls_highres.py` and re-running with the override is worth doing before
-believing it.
+period (for example with a high-resolution BLS search) and re-running with the override is
+worth doing before believing it.
 
 `--dur-prior` helps when $a/R_\star$ is poorly constrained by the photometry alone —
 typically a grazing or low-SNR target where the sampler wanders toward the bounds.
@@ -181,6 +184,13 @@ what produce the TTV-aware parameters in the published tables.
 | `fit_with_gp.py`, `fit_with_gp_iter.py` | Two-stage Gaussian-process plus transit fit, for hosts with strong stellar variability. |
 | `run_bls_highres.py` | High-resolution BLS, for verifying or overriding a catalog period. |
 
+!!! note "Not all of these are in this repository"
+    Of the scripts in this table, only `refined_transit_params_for_ttv.py` is part of this
+    repository, together with `fit_joint_sinusoidal_ttv.py`, the joint sinusoidal fit of the
+    Periodic candidates' transit times. The others are from the authors' working repository
+    and are listed for reference. `refined_transit_params_for_ttv.py` takes
+    `--results-root=DIR` as `run_full_analysis.py` does.
+
 ### The iteration, concretely
 
 `refined_transit_params_for_ttv.py` runs a cycle:
@@ -195,6 +205,14 @@ what produce the TTV-aware parameters in the published tables.
 "Stops moving" means $k$, $a/R_\star$ and $b$ each changed by less than $1\sigma$ since the
 previous iteration. `--max-iters=N` changes the cap; `--max-iters=0` stops after the first
 refit.
+
+!!! warning "Large TTVs"
+    The re-timing (item 4 above) centers each transit's fitting window on its
+    linear-ephemeris prediction. When the TTV is a large fraction of that window
+    (TOI-216.02 has a semi-amplitude of about 2.2 days), a fit can lock onto another
+    feature of the light curve. For the paper's final transit times, the transits were
+    re-measured with each fit centered on the transit itself; the README's "Reproducing
+    the paper" section describes how.
 
 Iteration 0 lands in `refined_transit/` and later ones in `refined_strict_iter1/`,
 `refined_strict_iter2/`, and so on; `iter_cascade_summary.json` names the adopted one. For
@@ -212,9 +230,14 @@ Both ingest every per-TOI `results.json` and can be re-run at any time. For TTV
 candidates they pull from the highest available refined iteration; for everything else
 they use the standard pipeline output. See [Output files](outputs.md).
 
+!!! note
+    These two scripts are not part of this repository. The README's "Reproducing the
+    paper" section describes how the published tables were assembled.
+
 ## Monitoring long runs
 
-`mem_watchdog.py` samples memory use during a batch and writes it to a log. This is what
+`mem_watchdog.py` (not part of this repository) samples memory use during a batch and
+writes it to a log. This is what
 lets you identify which target exhausted memory when a long run is killed hours after it
 started, since the run itself leaves no record of it.
 

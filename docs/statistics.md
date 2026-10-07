@@ -162,6 +162,13 @@ destroying any temporal coherence, which is exactly the null hypothesis of inter
 reporting floor is $10^{-5}$ — with $10^5$ permutations, zero exceedances cannot be
 distinguished from a very small probability.
 
+!!! note "The grid used for the paper's candidates"
+    The leave-one-out re-checks below, and the evaluation of the criteria for the paper,
+    use a different grid: ten frequencies per $1/T_{\rm baseline}$, and at least 200, from
+    $2/T_{\rm baseline}$ to $0.5/(P\,\Delta E)$, where $\Delta E$ is the median spacing of
+    the observed epochs. The Step 4 grid above is what `run_full_analysis.py` uses and what
+    `find_ttv_candidates.py` reads for its first pass.
+
 ---
 
 ## The three detection criteria {#the-three-detection-criteria}
@@ -192,6 +199,10 @@ if it still passes after every drop, and the TOI is kept if at least one criteri
 
 For the Periodic criterion, each drop gets a full permutation FAP recomputation (10,000
 permutations), and the criterion survives only if every drop still yields FAP $< 0.01$.
+
+For the paper, a TOI that passed a criterion on its Step 2 transit times was kept as a
+candidate only if it also passed on transit times re-measured with the template of the
+iterative TTV-corrected refit.
 
 This works asymmetrically across the three criteria, and it is worth understanding why:
 

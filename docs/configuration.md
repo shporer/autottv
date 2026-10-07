@@ -174,8 +174,7 @@ cost of the FAP floor: $10^5$ permutations can resolve a FAP of $10^{-5}$, and n
 Most keys are read at import, so editing `config.py` and re-running is enough. Two cautions:
 
 - **Detection thresholds change the candidate list**, so the summary tables need rebuilding
-  afterwards (`build_fit_params_tables.py`), and any previously computed leave-one-out
-  verdicts no longer apply.
+  afterwards, and any previously computed leave-one-out verdicts no longer apply.
 - **MCMC settings do not invalidate cached light curves** but do invalidate every fit.
   Delete the affected `autottv_results_v2/TOI_<X>/` directories rather than letting a
   partially updated set accumulate.
