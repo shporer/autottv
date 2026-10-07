@@ -143,10 +143,13 @@ the two.
 
 ## Periodogram and bootstrap FAP
 
-An error-weighted Lomb–Scargle periodogram of the O−C residuals, on 1,000 frequencies from
-$2/T_{\rm baseline}$ to $0.5/P$. The bounds are physical, not arbitrary: the lower one
+An error-weighted Lomb–Scargle periodogram of the O−C residuals, on a linear grid with ten
+frequencies per $1/T_{\rm baseline}$, and at least 200, from $2/T_{\rm baseline}$ to
+$0.5/(P\,\Delta E)$, where $\Delta E$ is the median spacing of the observed epochs (1 when
+the transits are consecutive). The bounds are physical, not arbitrary: the lower one
 guarantees two full cycles inside the baseline, the upper is the Nyquist frequency of a
-series sampled at the orbital period.
+series sampled every $\Delta E$ orbital periods. The leave-one-out re-checks below use the
+same grid.
 
 The false-alarm probability is **empirical**. Analytic FAP formulae assume white Gaussian
 noise on a regular grid; O−C series are gappy and often carry red noise, so the analytic
@@ -162,12 +165,11 @@ destroying any temporal coherence, which is exactly the null hypothesis of inter
 reporting floor is $10^{-5}$ — with $10^5$ permutations, zero exceedances cannot be
 distinguished from a very small probability.
 
-!!! note "The grid used for the paper's candidates"
-    The leave-one-out re-checks below, and the evaluation of the criteria for the paper,
-    use a different grid: ten frequencies per $1/T_{\rm baseline}$, and at least 200, from
-    $2/T_{\rm baseline}$ to $0.5/(P\,\Delta E)$, where $\Delta E$ is the median spacing of
-    the observed epochs. The Step 4 grid above is what `run_full_analysis.py` uses and what
-    `find_ttv_candidates.py` reads for its first pass.
+!!! note "Runs before version 1.0.0"
+    Step 4 used 1,000 frequencies from $2/T_{\rm baseline}$ to $0.5/P$ until version
+    1.0.0, so the FAPs stored in the `results.json` of earlier runs, including the per-TOI
+    runs made for the paper, differ from the paper's, which were computed separately on
+    the grid above.
 
 ---
 

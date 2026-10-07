@@ -119,7 +119,7 @@ physical — brightness must not increase toward the limb.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `PERIODOGRAM_OVERSAMPLING` | `10` | Frequency-grid oversampling |
+| `PERIODOGRAM_OVERSAMPLING` | `10` | Frequencies per $1/T_{\rm baseline}$ in the O−C periodogram grid (at least 200 in all) |
 | `BOOTSTRAP_FAP_N_ITERATIONS` | `100000` | Label permutations for the empirical FAP |
 | `N_SIGNIFICANT_PEAKS` | `5` | Peaks reported |
 | `PEAK_FAP_THRESHOLD` | `0.01` | Significance for peak finding |

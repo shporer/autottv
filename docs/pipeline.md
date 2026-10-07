@@ -176,16 +176,22 @@ the linear fit.
 ## Step 4 — Timing-residual periodogram
 
 **Module:** `plot_periodogram` in `run_full_analysis.py`. The package's `periodogram.py`,
-used only by `autottv_pipeline_v2/main.py`, differs: its upper frequency comes from the
-median spacing of the measured transits.
+used only by `autottv_pipeline_v2/main.py`, builds the same grid but with at least 100
+frequencies rather than 200.
 
-An error-weighted Lomb–Scargle periodogram of the O−C residuals, on a linear grid of 1,000
-frequencies running from $2/T_{\rm baseline}$ to $0.5/P$.
+An error-weighted Lomb–Scargle periodogram of the O−C residuals, on a linear grid with ten
+frequencies per $1/T_{\rm baseline}$ (`PERIODOGRAM_OVERSAMPLING`), and at least 200, running
+from $2/T_{\rm baseline}$ to $0.5/(P\,\Delta E)$, where $\Delta E$ is the median spacing of
+the observed epochs.
 
 - The **lower limit** guarantees at least two full cycles of any searched period fit inside
   the observing baseline.
 - The **upper limit** is the Nyquist frequency of the O−C series: residuals are sampled at
-  intervals of the orbital period, so anything faster carries no independent information.
+  intervals of the orbital period, or of $\Delta E$ periods when transits are missed (for
+  example a target observed every other orbit), so anything faster carries no independent
+  information. When the transits are consecutive, $\Delta E = 1$ and the limit is $0.5/P$.
+- When the baseline spans four median spacings or less, the range is empty and no
+  periodogram is computed.
 
 The false-alarm probability is empirical, not analytic: 100,000 label permutations, in each
 of which the (O−C, uncertainty) pairs are shuffled among the fixed epochs and the peak

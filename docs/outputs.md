@@ -35,6 +35,8 @@ autottv_results_v2/TOI_125_01/
 ```
 toi                     "125.01"
 tic_id                  52368076
+qlp_time_fix            with --qlp-time-fix only: version, and the QLP timestamp
+                        corrections applied (sector, orbit, model, n_points, shifts)
 sectors                 [1, 2, 28, 68, 69, 95, 96]
 n_points_total          106367
 
@@ -69,7 +71,10 @@ binned_residuals        reduced_chi2, rms_ppm, median_bin_err_ppm,
 individual_transits
   n_transits_full       full transits identified
   n_transits_used       after filtering
-  n_unconverged         fits that did not reach R-hat ≤ 1.01
+  n_unconverged         unconverged fits among the used transits (0: they are dropped)
+  n_unconverged_dropped transits dropped because their fit did not reach R-hat ≤ 1.01
+  unconverged_transits_excluded[]
+                        epoch, t_expected, t0_fit, t0_err, max_rhat, n_points of each
   transit_times[]       epoch, t_expected, t0_fit, t0_err, oc,
                         baseline_fit, slope_fit, n_points, mcmc_diagnostics
   oc_values[]           epoch, oc_minutes, oc_err_minutes
@@ -82,10 +87,11 @@ ephemeris
   quadratic             T0, P, Q, dPdE and errors
   delta_bic             ← Quadratic criterion
 
-periodogram
-  frequencies, power
-  peak_period
-  bootstrap_fap         ← Periodic criterion
+periodogram             null with fewer than 5 transits or an empty frequency range
+  peak_frequency, peak_period, peak_period_error, peak_power
+  bootstrap_fap         ← Periodic criterion (also as peak_fap)
+  bootstrap_n_iter, n_exceed
+  n_freq, freq_min, freq_max   the frequency grid (from version 1.0.0)
 ```
 
 !!! tip "The three numbers that matter"

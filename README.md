@@ -66,10 +66,11 @@ For every TOI, `run_full_analysis.py` executes:
 | **1. Phase-fold MCMC** | Fit the global transit shape (P, T₀, Rp/Rs, a/Rs, b, u1, u2, baseline) by stacking all transits on a linear ephemeris. | `FullAnalysisFitter` in `run_full_analysis.py` |
 | **2. Individual-transit MCMC** | Fix the shape from Step 1; fit each transit's T_mid, baseline, slope. | `individual_transit_fitter.py` |
 | **3. Ephemeris analysis** | Compare linear vs quadratic ephemerides (ΔBIC ≥ 6 favours quadratic), compute O–C residuals. | `ephemeris_analysis.py` |
-| **4. TTV periodogram** | Lomb–Scargle of O–C, with an empirical FAP from 10⁵ permutations of the (O–C, error) pairs among the epochs (requires ≥ 5 transits). | `plot_periodogram` in `run_full_analysis.py` |
+| **4. TTV periodogram** | Lomb–Scargle of O–C on ten frequencies per 1/T_baseline (at least 200) from 2/T_baseline to 0.5/(P ΔE), ΔE the median spacing of the observed epochs, with an empirical FAP from 10⁵ permutations of the (O–C, error) pairs among the epochs (requires ≥ 5 transits). | `plot_periodogram` in `run_full_analysis.py` |
 
-The package's `phase_fold_fitter.py` and `periodogram.py` are separate implementations, with a
-flat prior on b and a different frequency grid. Only `autottv_pipeline_v2/main.py` uses them.
+The package's `phase_fold_fitter.py` and `periodogram.py` are separate implementations, the
+first with a flat prior on b, the second with a grid of at least 100 rather than 200
+frequencies. Only `autottv_pipeline_v2/main.py` uses them.
 
 ### Priors (Step 1, free LD)
 
@@ -141,10 +142,11 @@ not part of this release. They were done as follows (section numbers refer to th
    `find_ttv_candidates.py`, evaluated on the Step-2 transit times. The periodogram FAPs
    come from 10⁵ permutations (10⁴ for each leave-one-out subset) on the frequency grid of
    Section 3.4: ten frequencies per 1/T_baseline, and at least 200, from 2/T_baseline to
-   0.5/(P ΔE), with ΔE the median spacing of the observed epochs. That is the grid of the
-   leave-one-out re-checks in `find_ttv_candidates.py`; the Step-4 periodogram of
-   `run_full_analysis.py`, whose FAP `find_ttv_candidates.py` reads for its first pass, uses
-   1,000 frequencies from 2/T_baseline to 0.5/P.
+   0.5/(P ΔE), with ΔE the median spacing of the observed epochs. The Step-4 periodogram of
+   `run_full_analysis.py` and the leave-one-out re-checks of `find_ttv_candidates.py` use
+   this grid. (The per-TOI runs made for the paper used 1,000 frequencies from 2/T_baseline
+   to 0.5/P in Step 4, so the FAPs in their `results.json` differ from the paper's, which
+   were computed separately on this grid.)
 4. **TTV-corrected refit (Sections 5.1 and 6.1).** `refined_transit_params_for_ttv.py` for
    each TOI that passed a criterion. Its re-timing centers each transit's fit on the
    linear-ephemeris prediction, which for large TTVs can lock onto another feature of the

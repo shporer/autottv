@@ -2231,6 +2231,31 @@ def _bootstrap_worker(args):
     return n_exceed
 
 
+def _periodogram_frequency_grid(time_epochs):
+    """Frequency grid (1/day) of the O-C periodogram (paper, Section 3.4).
+
+    Ten frequencies per 1/T_baseline, and at least 200, from 2/T_baseline (two full
+    cycles within the baseline) to the Nyquist frequency of the observed transit
+    times, 0.5/(median spacing): 0.5/P when the transits are consecutive, 0.5/(P dE)
+    when the median epoch spacing dE exceeds one. The same grid as
+    _loo_frequency_grid in find_ttv_candidates.py. None when that range is empty,
+    i.e. when the baseline spans four median spacings or less.
+    """
+    time_epochs = np.asarray(time_epochs, dtype=float)
+    if len(time_epochs) < 2:
+        return None
+    time_span = time_epochs.max() - time_epochs.min()
+    if time_span <= 0:
+        return None
+    dt_med = float(np.median(np.diff(np.sort(time_epochs))))
+    f_min = 2.0 / time_span
+    f_nyq = 0.5 / max(dt_med, 1e-9)
+    if f_nyq <= f_min:
+        return None
+    n_freq = max(200, int(config.PERIODOGRAM_OVERSAMPLING * time_span * (f_nyq - f_min)))
+    return np.linspace(f_min, f_nyq, n_freq)
+
+
 def plot_periodogram(oc, epochs, period, output_path, bootstrap_n_iter=100000, oc_err=None):
     """Plot Lomb-Scargle periodogram of O-C values with bootstrap FAP."""
     if len(oc) < 5:
@@ -2240,11 +2265,13 @@ def plot_periodogram(oc, epochs, period, output_path, bootstrap_n_iter=100000, o
     # Convert epochs to time
     time_epochs = epochs * period  # days
 
-    # Frequency range (1/day)
-    f_min = 2.0 / (time_epochs.max() - time_epochs.min())  # Require at least 2 cycles
-    f_max = 0.5 / period  # Nyquist-like limit
-
-    frequencies = np.linspace(f_min, f_max, 1000)
+    # Frequency grid (1/day) of the paper's Section 3.4: ten frequencies per 1/T_baseline (at
+    # least 200) from 2/T_baseline to 0.5/(P dE), dE the median spacing of the observed epochs.
+    # (Before 2026-10 this was 1,000 frequencies from 2/T_baseline to 0.5/P.)
+    frequencies = _periodogram_frequency_grid(time_epochs)
+    if frequencies is None:
+        print("  Baseline too short for the periodogram (four median epoch spacings or less)")
+        return None
 
     # Lomb-Scargle periodogram — astropy with error weighting when oc_err is
     # provided, so the LS power matches the same statistic used by the C4 LOO
@@ -2388,7 +2415,10 @@ def plot_periodogram(oc, epochs, period, output_path, bootstrap_n_iter=100000, o
         'peak_fap': bootstrap_fap,
         'bootstrap_fap': bootstrap_fap,
         'bootstrap_n_iter': bootstrap_n_iter,
-        'n_exceed': n_exceed
+        'n_exceed': n_exceed,
+        'n_freq': len(frequencies),
+        'freq_min': float(frequencies[0]),
+        'freq_max': float(frequencies[-1])
     }
 
 
