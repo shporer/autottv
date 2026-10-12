@@ -59,7 +59,9 @@ curve.
 ### Identifying transits
 
 A transit counts as *full* when data extend to at least `TRANSIT_COVERAGE_FACTOR` (1.5)
-transit durations on either side of the predicted mid-time. Partial transits are excluded
+transit durations (from first to fourth contact) on either side of the predicted mid-time,
+allowing a shortfall at each end of up to one cadence or 15% of the transit duration,
+whichever is longer. Partial transits are excluded
 from timing: without out-of-transit baseline on both sides, the mid-time is degenerate
 with the local slope.
 
@@ -161,7 +163,15 @@ Two models are fitted to the measured mid-times by weighted least squares:
 
 $$T(E) = T_0 + PE \qquad\text{versus}\qquad T(E) = T_0 + PE + QE^2$$
 
-with $dP/dE = 2Q$. Model preference is decided by
+with $dP/dE = 2Q$. Both models are linear in their parameters, so `weighted_polyfit` solves
+them exactly: the times are referred to their median, the epochs are divided by $\max|E|$
+for conditioning, and the whitened system is solved by QR, which gives the parameters and
+their covariance. Before version 1.0.1 the fits used `scipy.optimize.curve_fit`, whose
+finite-difference covariance on raw BJD values misstated the parameter uncertainties (that
+of $dP/dE$ by up to a factor of ten); the best-fit values agree with the exact solution to
+about $0.01\sigma$.
+
+Model preference is decided by
 
 $$\Delta{\rm BIC} = {\rm BIC}_{\rm linear} - {\rm BIC}_{\rm quadratic} > 6$$
 

@@ -9,7 +9,7 @@ and a refined fitter re-stacks transits at their individually-fitted times to de
 systems that a linear-ephemeris stack would bias.
 
 - **Catalog scope:** 3,775 TOIs in the filtered catalog (from the 7,890-TOI ExoFOP TOI catalog), of which 3,650 remain after the 125 removals listed in `rejected_TOIs_list.csv`
-- **Version 1.0.0** is the code used for Shporer & Drori, *AutoTTV: Homogeneous Transit Timing of 3,650 TESS TOIs and the Radius Bias of Strict-Period Phase Folding* (submitted to ApJS). [Reproducing the paper](#reproducing-the-paper) lists which parts of that analysis this repository contains.
+- **Version 1.0.1** is the code used for Shporer & Drori, *AutoTTV: Homogeneous Transit Timing of 3,650 TESS TOIs and the Radius Bias of Strict-Period Phase Folding* (submitted to ApJS). [Reproducing the paper](#reproducing-the-paper) lists which parts of that analysis this repository contains. It differs from 1.0.0 only in the Step-3 ephemeris fits, which are now solved exactly by weighted least squares; this corrects their parameter uncertainties (Step 3 in [`docs/pipeline.md`](docs/pipeline.md)).
 
 ---
 

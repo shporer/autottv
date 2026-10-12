@@ -28,7 +28,7 @@ end to end.
 | `batman-package` | the analytic transit model, with cadence-aware supersampling | yes |
 | `emcee` | the affine-invariant ensemble sampler | yes |
 | `astropy` | FITS I/O and the Lomb–Scargle periodogram | yes |
-| `numpy`, `scipy` | numerics; `scipy` also supplies the Claret table interpolation and the ephemeris least-squares fits | yes |
+| `numpy`, `scipy` | numerics; `scipy` also supplies the Claret table interpolation | yes |
 | `pandas` | catalog handling and table construction | yes |
 | `matplotlib` | all diagnostic figures | yes |
 | `corner` | posterior corner plots | yes |
