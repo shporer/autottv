@@ -120,7 +120,7 @@ Built by `build_all_transit_times.py` and `build_fit_params_tables.py`.
 
 !!! note
     These two scripts are not part of this repository; the tables are described here for
-    reference. The README's "Reproducing the paper" section describes how the published
+    reference. The README's "Reproducing the paper" section describes how the paper's
     tables were assembled.
 
 ### `tables/transit_times.csv`
@@ -159,7 +159,7 @@ One table per detection class plus one for non-candidates. Columns:
 !!! warning "Two different periods"
     For quadratic candidates, `period`/`T0` are the shape fit's own linear ephemeris while
     `P_quad`/`T0_quad` are the quadratic one. They differ — for TOI 125.01, by 14 seconds
-    in period and 19 minutes in epoch. The published tables use the **quadratic** values
+    in period and 19 minutes in epoch. The paper's tables use the **quadratic** values
     for quadratic candidates. Check which you are reading.
 
 ### Source priority

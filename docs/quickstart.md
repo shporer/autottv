@@ -91,7 +91,7 @@ described there.
     The MCMC stopping condition requires $\hat{R} < 1.01$, and when that threshold is not 
     reached the convergence is officially considered as failed (`converged: false` in 
     `results.json` file). Although, larger values of $\hat{R}$ can be considered 
-    satisfactory for convergence. The published analysis retains fits with $\hat{R}$ up to 1.1.
+    satisfactory for convergence. The paper's analysis retains fits with $\hat{R}$ up to 1.1.
     
 
 ## Useful flags

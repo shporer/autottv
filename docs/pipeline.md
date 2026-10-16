@@ -1,6 +1,6 @@
 # What the code does
 
-Five stages run for every TOI. Steps 1–4 are the published pipeline; the iterative refit
+Five stages run for every TOI. Steps 1–4 are the paper's pipeline; the iterative refit
 runs only for TTV candidates. Every threshold named here lives in
 [`autottv_pipeline_v2/config.py`](configuration.md).
 
@@ -146,10 +146,13 @@ per transit would let a shallow, wide solution trade against a shifted mid-time.
 
 ### Filtering
 
-Two cuts, both at 10σ, remove transits that would otherwise dominate the ephemeris fit:
+Three rules, applied in this order, remove transits that would otherwise dominate the
+ephemeris fit:
 
+- a per-transit fit that did not converge
 - $\sigma_{T_0}$ greater than 10× the median timing error for that target
-- an O−C residual more than 10σ from the median
+- an O−C residual, relative to the Step 1 ephemeris, more than 10σ from the median O−C,
+  where σ is 1.48 times the median absolute deviation
 
 **Output:** one mid-transit time and uncertainty per epoch, plus the O−C series.
 

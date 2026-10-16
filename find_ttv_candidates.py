@@ -65,6 +65,15 @@ def weighted_oc_rms(oc, oc_err):
 N_PERMUTATIONS_LOO = 10_000
 
 
+def _line_residuals(x, y, err):
+    """Residuals of the weighted least-squares line (weights 1/err^2) through (x, y)."""
+    w = 1.0 / np.square(err)
+    xm, ym = np.sum(w * x) / np.sum(w), np.sum(w * y) / np.sum(w)
+    sxx = np.sum(w * (x - xm) ** 2)
+    slope = np.sum(w * (x - xm) * (y - ym)) / sxx if sxx > 0 else 0.0
+    return y - ym - slope * (x - xm)
+
+
 def _loo_frequency_grid(time_epochs):
     """Frequency grid for the C2 re-checks: 2/span up to 0.5/(median transit spacing)."""
     time_span = time_epochs.max() - time_epochs.min()
@@ -109,8 +118,10 @@ def leave_one_out_test(epochs, oc_minutes, oc_err_minutes, period,
 
     Each criterion the TOI originally passed is recomputed with each transit
     removed in turn, and it survives only if it still passes after every
-    removal. The TOI passes C4 if at least one criterion survives. This is
-    the test run_per_criterion_loo_v2.py applies in the analysis repository.
+    removal. C1 and C3 refit the ephemerides to the remaining transits;
+    C2 uses the remaining O-C of the fit to all transits.
+    The TOI passes C4 if at least one criterion survives. This is the test
+    run_per_criterion_loo_v2.py applies in the analysis repository.
 
     C2 is re-checked with N_PERMUTATIONS_LOO permutations per removal, split
     across the workers of `pool` (serial when pool is None).
@@ -159,9 +170,11 @@ def leave_one_out_test(epochs, oc_minutes, oc_err_minutes, period,
             except Exception:
                 fail('C1', i)
 
-        # C3: weighted O-C rms over the median error
+        # C3: weighted O-C rms over the median error, with the linear ephemeris
+        # refit to the remaining transits (a line fitted to the O-C leaves the
+        # same residuals as one fitted to the times)
         if survives['C3']:
-            rms = weighted_oc_rms(oc[m], oc_err[m])
+            rms = weighted_oc_rms(_line_residuals(epochs[m], oc[m], oc_err[m]), oc_err[m])
             med = float(np.median(oc_err[m]))
             if rms is None or med <= 0 or rms / med <= oc_rms_over_err_threshold:
                 fail('C3', i)

@@ -8,19 +8,19 @@ timing residuals for transit timing variations. It is designed to run unattended
 group of TOIs, or the entire TOI catalog, producing homogeneous results.
 
 The pipeline was built for [Shporer & Drori (2026)](#citation), which applied it to
-**3,650 TOIs** across TESS Sectors 1–96 and produced **111,995 individual transit times**
-and **168 TTV candidates**.
+**3,650 TOIs** across TESS Sectors 1–96 and produced **112,615 individual transit times**
+and **169 TTV candidates**.
 
 **Source code:** [github.com/shporer/autottv](https://github.com/shporer/autottv) — MIT licensed.
 
-**Contact:** For questoins, bug reports, or suggestions, email [shporer@mit.edu](mailto: shporer@mit.edu).
+**Contact:** For questions, bug reports, or suggestions, email [shporer@mit.edu](mailto:shporer@mit.edu).
 
 ---
 
 ## What it produces
 
 For each TOI, one directory containing (1) a `results.json` file containing a 
-documentation of the analysis including fitted paramets, (2) a set of diagnostic 
+documentation of the analysis including fitted parameters, (2) a set of diagnostic 
 figures, and (3) the MCMC chains in npy files. 
 
 

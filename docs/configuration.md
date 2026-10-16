@@ -1,7 +1,7 @@
 # Configuration
 
 Everything tunable lives in `autottv_pipeline_v2/config.py`. Values below are the defaults
-used for the published analysis. Changing them changes the science, so the notes matter as
+used for the paper's analysis. Changing them changes the science, so the notes matter as
 much as the numbers.
 
 ---

@@ -172,7 +172,7 @@ window of a few transit durations.
 
 These run **after** the main pipeline and reanalyse an existing
 `autottv_results_v2/TOI_<X>/results.json`, writing into named subdirectories. They are
-what produce the TTV-aware parameters in the published tables.
+what produce the TTV-aware parameters in the paper's tables.
 
 | Script | What it does |
 |---|---|
@@ -216,7 +216,7 @@ refit.
 
 Iteration 0 lands in `refined_transit/` and later ones in `refined_strict_iter1/`,
 `refined_strict_iter2/`, and so on; `iter_cascade_summary.json` names the adopted one. For
-the published tables **the highest available iteration was the adopted fit**, falling back
+the paper's tables **the highest available iteration was the adopted fit**, falling back
 to iteration 0 and then to the standard fit.
 
 ## Building the summary tables
@@ -232,7 +232,7 @@ they use the standard pipeline output. See [Output files](outputs.md).
 
 !!! note
     These two scripts are not part of this repository. The README's "Reproducing the
-    paper" section describes how the published tables were assembled.
+    paper" section describes how the paper's tables were assembled.
 
 ## Monitoring long runs
 

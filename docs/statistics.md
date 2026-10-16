@@ -198,6 +198,10 @@ A criterion firing is not sufficient. Each flagged TOI is re-tested with each tr
 dropped in turn: if removing any **single** transit destroys the detection, the signal was
 driven by one event and is rejected. Each criterion is tested on its own: it survives only
 if it still passes after every drop, and the TOI is kept if at least one criterion survives.
+For the Quadratic and Scatter criteria the ephemeris is refit to the remaining transits
+after each drop; the Periodic criterion uses the remaining O−C residuals of the fit to all
+transits. (Before version 1.0.2 the Scatter criterion also used the residuals of the fit to
+all transits.)
 
 For the Periodic criterion, each drop gets a full permutation FAP recomputation (10,000
 permutations), and the criterion survives only if every drop still yields FAP $< 0.01$.

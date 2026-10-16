@@ -9,7 +9,7 @@ and a refined fitter re-stacks transits at their individually-fitted times to de
 systems that a linear-ephemeris stack would bias.
 
 - **Catalog scope:** 3,775 TOIs in the filtered catalog (from the 7,890-TOI ExoFOP TOI catalog), of which 3,650 remain after the 125 removals listed in `rejected_TOIs_list.csv`
-- **Version 1.0.1** is the code used for Shporer & Drori, *AutoTTV: Homogeneous Transit Timing of 3,650 TESS TOIs and the Radius Bias of Strict-Period Phase Folding* (submitted to ApJS). [Reproducing the paper](#reproducing-the-paper) lists which parts of that analysis this repository contains. It differs from 1.0.0 only in the Step-3 ephemeris fits, which are now solved exactly by weighted least squares; this corrects their parameter uncertainties (Step 3 in [`docs/pipeline.md`](docs/pipeline.md)).
+- **Version 1.0.2** is the code used for Shporer & Drori, *AutoTTV: Homogeneous Transit Timing of 3,650 TESS TOIs and the Radius Bias of Strict-Period Phase Folding* (submitted to ApJS). [Reproducing the paper](#reproducing-the-paper) lists which parts of that analysis this repository contains. It differs from 1.0.1 only in the leave-one-out test of the scatter criterion, which now refits the linear ephemeris to the remaining transits after each removal, as in the paper's analysis (Leave-one-out validation in [`docs/statistics.md`](docs/statistics.md)). Version 1.0.1 solved the Step-3 ephemeris fits exactly by weighted least squares, which corrected their parameter uncertainties (Step 3 in [`docs/pipeline.md`](docs/pipeline.md)).
 
 ---
 
@@ -87,7 +87,8 @@ frequencies. Only `autottv_pipeline_v2/main.py` uses them.
 
 The QLP light curves of Sectors 14 and 15 carry barycentric-correction errors of up to
 10.6 min. Those of Sector 80, and of the second orbit of Sector 85 for one star, carry a
-smaller error of the kind the QLP team documented for Sectors 74–79 (paper, Section 3.1).
+smaller error of the kind the QLP team documented for Sectors 74–79 (paper, Section 3.1 and
+Appendix B).
 `qlp_time_fix.py` computes both errors from the Earth's barycentric position.
 `qlp_time_errors.csv` lists the affected sectors (and the orbit and star, where the error
 is limited to them), and `qlp_time_spans.csv` the QLP data span of each affected star and
@@ -138,15 +139,16 @@ not part of this release. They were done as follows (section numbers refer to th
    228 TOIs whose period or reference time the QLP timestamp errors would otherwise change
    by more than 0.3σ were run with `--qlp-time-fix`; for the others, the correction of
    `QLPTimeFix.correction` was applied to the measured transit times.
-3. **Detection (Section 5.1).** The three criteria, each with its leave-one-out test, as in
-   `find_ttv_candidates.py`, evaluated on the Step-2 transit times. The periodogram FAPs
-   come from 10⁵ permutations (10⁴ for each leave-one-out subset) on the frequency grid of
-   Section 3.4: ten frequencies per 1/T_baseline, and at least 200, from 2/T_baseline to
-   0.5/(P ΔE), with ΔE the median spacing of the observed epochs. The Step-4 periodogram of
-   `run_full_analysis.py` and the leave-one-out re-checks of `find_ttv_candidates.py` use
-   this grid. (The per-TOI runs made for the paper used 1,000 frequencies from 2/T_baseline
-   to 0.5/P in Step 4, so the FAPs in their `results.json` differ from the paper's, which
-   were computed separately on this grid.)
+3. **Detection (Section 5.1).** The three criteria, each with its leave-one-out test, as
+   in `find_ttv_candidates.py`, evaluated on the Step-2 transit times. The quadratic and
+   scatter re-checks refit the ephemeris to the remaining transits after each removal. The
+   periodogram FAPs come from 10⁵ permutations (10⁴ for each leave-one-out subset) on the
+   frequency grid of Section 3.5: ten frequencies per 1/T_baseline, and at least 200, from
+   2/T_baseline to 0.5/(P ΔE), with ΔE the median spacing of the observed epochs. The
+   Step-4 periodogram of `run_full_analysis.py` and the leave-one-out re-checks of
+   `find_ttv_candidates.py` use this grid. (The per-TOI runs made for the paper used 1,000
+   frequencies from 2/T_baseline to 0.5/P in Step 4, so the FAPs in their `results.json`
+   differ from the paper's, which were computed separately on this grid.)
 4. **TTV-corrected refit (Sections 5.1 and 6.1).** `refined_transit_params_for_ttv.py` for
    each TOI that passed a criterion. Its re-timing centers each transit's fit on the
    linear-ephemeris prediction, which for large TTVs can lock onto another feature of the

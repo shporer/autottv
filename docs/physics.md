@@ -128,7 +128,7 @@ within two or three passes.
 
 ### How large is it?
 
-Across the 168 TTV candidates in the published analysis, about **20%** show a radius-ratio
+Across the 169 TTV candidates in the paper's analysis, about **20%** show a radius-ratio
 difference between the strict-period and TTV-aware fits exceeding three times the combined
 uncertainty. In a matched control sample of non-TTV confirmed planets put through the same
 two-step procedure, the rate is far lower — which is what establishes that the effect is
@@ -155,8 +155,10 @@ Two checks:
 
 **Sign.** Tidal decay can only shorten a period. A positive $dP/dt$ rules it out.
 
-**Magnitude.** The only compelling measured tidal decay rate is WASP-12 b, at roughly
-$-29$ ms yr$^{-1}$. Rates orders of magnitude larger are not decay.
+**Magnitude.** A decay rate $dP/dt = -(27\pi/2Q'_\star)(M_p/M_\star)(a/R_\star)^{-5}$
+implies a modified stellar tidal quality factor $Q'_\star$. The only compelling measured
+decay, that of WASP-12 b at roughly $-29$ ms yr$^{-1}$, implies $Q'_\star \approx 2\times10^5$;
+a rate that would need a much smaller $Q'_\star$ is unlikely to be decay.
 
 What curvature usually means instead:
 
@@ -169,9 +171,10 @@ What curvature usually means instead:
   fit will absorb. Worth ruling out, for example with a high-resolution BLS search,
   before believing a strong ΔBIC.
 
-The published analysis found *no* quadratic candidate with a period derivative consistent
-with tidal decay: over half were positive, and every negative value exceeded the WASP-12 b
-rate by at least a factor of a few.
+In the paper's analysis, none of the 84 Quadratic candidates is most plausibly explained by
+tidal decay. Decay cannot produce the positive $dP/dt$ of 47 of them, and the other 37 would
+require $Q'_\star \lesssim 8.5\times10^4$, at least a factor of two below the
+$Q'_\star \approx 2\times10^5$ inferred for WASP-12.
 
 ---
 
